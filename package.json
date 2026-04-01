@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@ai-sdk/provider": "^3.0.8",
-    "@ali/qoder-agent-sdk": "^0.0.45",
     "@opencode-ai/plugin": "^1.2.27",
     "zod": "^3.22.4"
   },

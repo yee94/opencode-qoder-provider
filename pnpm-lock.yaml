@@ -11,9 +11,6 @@ importers:
       '@ai-sdk/provider':
         specifier: ^3.0.8
         version: 3.0.8
-      '@ali/qoder-agent-sdk':
-        specifier: ^0.0.45
-        version: 0.0.45
       '@opencode-ai/plugin':
         specifier: ^1.2.27
         version: 1.2.27
@@ -33,15 +30,6 @@ packages:
   '@ai-sdk/provider@3.0.8':
     resolution: {integrity: sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ==}
     engines: {node: '>=18'}
-
-  '@ali/qoder-agent-sdk@0.0.45':
-    resolution: {integrity: sha512-/1dvN+JV9jI0B+i9HsKXGPZkE4LlVtXdPC+HRCznEWgF9Ia0PqLv0lGps6SvmkeC2+/SLfb7Vo0oMq33ZNdCew==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      '@modelcontextprotocol/sdk': '>=1.0.0'
-    peerDependenciesMeta:
-      '@modelcontextprotocol/sdk':
-        optional: true
 
   '@emnapi/core@1.9.1':
     resolution: {integrity: sha512-mukuNALVsoix/w1BJwFzwXBN/dHeejQtuVzcDsfOEsdpCumXb/E9j8w11h5S54tT1xhifGfbbSm/ICrObRb3KA==}
@@ -486,10 +474,6 @@ snapshots:
   '@ai-sdk/provider@3.0.8':
     dependencies:
       json-schema: 0.4.0
-
-  '@ali/qoder-agent-sdk@0.0.45':
-    dependencies:
-      zod: 3.25.76
 
   '@emnapi/core@1.9.1':
     dependencies:

@@ -2579,6 +2579,7 @@ describe('QoderLanguageModel', () => {
       const blockPromise = new Promise<void>((resolve) => { resolveBlock = resolve })
       mockReceiveMessagesFactory = () => (async function* () {
         await blockPromise
+        yield* [] as any
       })()
 
       const abortController = new AbortController()
@@ -2600,11 +2601,40 @@ describe('QoderLanguageModel', () => {
       expect(true).toBe(true)
     })
 
+    it('外部 abort 后收到 result error_during_execution 时，不应向上层输出 error/finish', async () => {
+      let resolveBlock!: () => void
+      const blockPromise = new Promise<void>((resolve) => { resolveBlock = resolve })
+      mockReceiveMessagesFactory = () => (async function* () {
+        await blockPromise
+        yield {
+          type: 'result',
+          subtype: 'error_during_execution',
+          is_error: true,
+          errors: ['{"code":48707,"message":"context canceled"}'],
+        } as any
+      })()
+
+      const abortController = new AbortController()
+      const model = new QoderLanguageModel('auto')
+      const streamPromise = model.doStream(buildCallOptions('ping', {
+        abortSignal: abortController.signal,
+      }))
+      const { stream } = await streamPromise
+
+      const partsPromise = collectStream(stream)
+      abortController.abort()
+      resolveBlock()
+
+      const parts = await partsPromise
+      expect(parts.map((p) => p.type)).toEqual(['stream-start'])
+    })
+
     it('取消 ReadableStream reader 后，不应留下悬挂执行', async () => {
       let resolveBlock!: () => void
       const blockPromise = new Promise<void>((resolve) => { resolveBlock = resolve })
       mockReceiveMessagesFactory = () => (async function* () {
         await blockPromise
+        yield* [] as any
       })()
 
       const model = new QoderLanguageModel('auto')

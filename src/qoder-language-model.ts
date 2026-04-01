@@ -960,6 +960,16 @@ export class QoderLanguageModel implements LanguageModelV2 {
               }
               activeStreamTextBlocks.clear()
 
+              const wasExternallyAbortedResult =
+                cleanupCalled && m.subtype === 'error_during_execution'
+
+              if (wasExternallyAbortedResult) {
+                debugLog('result: suppressing error_during_execution after external abort/cancel', streamTraceId)
+                pendingToolCalls.clear()
+                hasFinish = true
+                break
+              }
+
               const isError =
                 m.is_error === true ||
                 (typeof m.subtype === 'string' && m.subtype !== 'success')
