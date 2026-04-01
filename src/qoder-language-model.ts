@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
   configure,
-  query,
+  QoderAgentSDKClient,
 } from './vendor/qoder-agent-sdk.mjs'
 
 import { buildPromptFromOptions } from './prompt-builder.js'
@@ -164,6 +164,35 @@ function normalizeToolName(name: string): string {
     return withoutPrefix
   }
   return lower
+}
+
+function arePromptMessagesEqual(
+  left: LanguageModelV2CallOptions['prompt'][number],
+  right: LanguageModelV2CallOptions['prompt'][number],
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function getSharedPromptPrefixLength(
+  previousPrompt: LanguageModelV2CallOptions['prompt'],
+  nextPrompt: LanguageModelV2CallOptions['prompt'],
+): number {
+  const max = Math.min(previousPrompt.length, nextPrompt.length)
+  let idx = 0
+  while (idx < max && arePromptMessagesEqual(previousPrompt[idx], nextPrompt[idx])) {
+    idx++
+  }
+  return idx
+}
+
+function trimResumedDeltaPrompt(
+  deltaPrompt: LanguageModelV2CallOptions['prompt'],
+): LanguageModelV2CallOptions['prompt'] {
+  let start = 0
+  while (start < deltaPrompt.length && deltaPrompt[start]?.role === 'assistant') {
+    start++
+  }
+  return deltaPrompt.slice(start)
 }
 
 function normalizeToolInput(toolName: string, input: string): string {
@@ -315,6 +344,8 @@ function buildQoderQueryOptions(
   includePartialMessages: true
   maxBufferSize: number
   sessionId: string
+  continue?: boolean
+  resume?: string
   cwd: string
   env: Record<string, string>
   pathToQoderCLIExecutable?: string
@@ -463,11 +494,107 @@ export class QoderLanguageModel implements LanguageModelV2 {
   readonly specificationVersion = 'v2' as const
   readonly provider = 'qoder'
   readonly supportedUrls: Record<string, RegExp[]> = {}
+  private activeSessionId?: string
+  private previousPrompt?: LanguageModelV2CallOptions['prompt']
+  private activeClient?: QoderAgentSDKClient
+  private activeClientSignature?: string
 
   constructor(
     public readonly modelId: string,
     private readonly providerOptions?: QoderProviderOptions,
   ) {}
+
+  private buildSessionPlan(options: LanguageModelV2CallOptions): {
+    effectivePrompt: LanguageModelV2CallOptions['prompt']
+    sessionId: string
+    continueSession: boolean
+    resumeSessionId?: string
+  } {
+    const freshSessionId = randomUUID()
+    const previousPrompt = this.previousPrompt
+    const activeSessionId = this.activeSessionId
+
+    if (!previousPrompt || !activeSessionId) {
+      return {
+        effectivePrompt: options.prompt,
+        sessionId: freshSessionId,
+        continueSession: false,
+      }
+    }
+
+    const sharedPrefixLength = getSharedPromptPrefixLength(previousPrompt, options.prompt)
+    const isExtension = sharedPrefixLength === previousPrompt.length && options.prompt.length >= previousPrompt.length
+    if (!isExtension) {
+      return {
+        effectivePrompt: options.prompt,
+        sessionId: freshSessionId,
+        continueSession: false,
+      }
+    }
+
+    const rawDeltaPrompt = options.prompt.slice(sharedPrefixLength)
+    const deltaPrompt = trimResumedDeltaPrompt(rawDeltaPrompt)
+    if (deltaPrompt.length === 0 || deltaPrompt[0]?.role !== 'user') {
+      return {
+        effectivePrompt: options.prompt,
+        sessionId: freshSessionId,
+        continueSession: false,
+      }
+    }
+
+    return {
+      effectivePrompt: deltaPrompt,
+      sessionId: activeSessionId,
+      continueSession: false,
+      resumeSessionId: activeSessionId,
+    }
+  }
+
+  private commitSessionState(prompt: LanguageModelV2CallOptions['prompt'], sessionId: string): void {
+    this.previousPrompt = prompt
+    this.activeSessionId = sessionId
+  }
+
+  private resetSessionState(): void {
+    this.previousPrompt = undefined
+    this.activeSessionId = undefined
+  }
+
+  private buildClientSignature(options: ReturnType<typeof buildQoderQueryOptions>): string {
+    const mcpServerKeys = Object.keys(options.mcpServers ?? {}).sort()
+    const extraArgKeys = Object.keys(options.extraArgs ?? {}).sort()
+    return JSON.stringify({
+      model: options.model,
+      cwd: options.cwd,
+      cli: options.pathToQoderCLIExecutable,
+      mcpServerKeys,
+      extraArgKeys,
+    })
+  }
+
+  private async resetClient(): Promise<void> {
+    if (this.activeClient) {
+      await this.activeClient.disconnect().catch(() => { /* ignore */ })
+    }
+    this.activeClient = undefined
+    this.activeClientSignature = undefined
+  }
+
+  private async getOrCreateClient(
+    options: ReturnType<typeof buildQoderQueryOptions>,
+  ): Promise<QoderAgentSDKClient> {
+    const signature = this.buildClientSignature(options)
+    if (this.activeClient && this.activeClientSignature === signature) {
+      return this.activeClient
+    }
+
+    await this.resetClient()
+    const client = new QoderAgentSDKClient(options)
+    await client.connect()
+    this.activeClient = client
+    this.activeClientSignature = signature
+    return client
+  }
 
   async doGenerate(options: LanguageModelV2CallOptions) {
     const { stream } = await this.doStream(options)
@@ -510,9 +637,17 @@ export class QoderLanguageModel implements LanguageModelV2 {
   async doStream(options: LanguageModelV2CallOptions): Promise<{
     stream: ReadableStream<LanguageModelV2StreamPart>
   }> {
+    const sessionPlan = this.buildSessionPlan(options)
+    const effectiveOptions = {
+      ...options,
+      prompt: sessionPlan.effectivePrompt,
+    }
     const cliPath = resolveQoderCLI()
-    const qoderOptions = buildQoderQueryOptions(options, this.modelId, cliPath, this.providerOptions)
-    const prompt = buildPromptFromOptions(options, qoderOptions.sessionId)
+    const qoderOptions = {
+      ...buildQoderQueryOptions(effectiveOptions, this.modelId, cliPath, this.providerOptions),
+      sessionId: sessionPlan.sessionId,
+    }
+    const prompt = buildPromptFromOptions(effectiveOptions, qoderOptions.sessionId)
 
     const streamTraceId = randomUUID().slice(0, 8)
     debugLog(`doStream() called, modelId=${this.modelId}, cliPath=${cliPath}`, streamTraceId)
@@ -532,18 +667,14 @@ export class QoderLanguageModel implements LanguageModelV2 {
     )
     debugLog(`doStream() hasTools=${hasTools}, functionToolNames=[${[...functionToolNames].join(',')}]`, streamTraceId)
 
-    // 每次 query 独立的 AbortController，用于中断后台 qodercli 进程
-    const abortController = new AbortController()
+    let activeClient: QoderAgentSDKClient | undefined
 
-    // 幂等清理函数：abort + 结束 query 异步生成器，避免重复调用抛错
+    // 幂等清理函数：中断当前 client query，避免重复调用抛错
     let cleanupCalled = false
-    let qoderQueryRef: AsyncGenerator<unknown, void, undefined> | null = null
     function cleanup() {
       if (cleanupCalled) return
       cleanupCalled = true
-      abortController.abort()
-      // return() 通知生成器提前结束，触发 SDK/qodercli 清理路径
-      void qoderQueryRef?.return(undefined).catch(() => { /* ignore */ })
+      void activeClient?.interrupt().catch(() => { /* ignore */ })
     }
 
     // 监听外部 abortSignal：opencode 中断时立即触发清理
@@ -597,11 +728,15 @@ export class QoderLanguageModel implements LanguageModelV2 {
         let suppressFurtherAssistantContent = false
 
         try {
-          // query() 是单次查询的最优路径（QoderAgentSDKClient 是双向交互会话，每次 connect() 冷启动更慢）
-          const qoderQuery = query({ prompt, options: { ...qoderOptions, abortController } })
-          qoderQueryRef = qoderQuery
+          if (!sessionPlan.resumeSessionId) {
+            this.resetSessionState()
+            await this.resetClient()
+          }
+          activeClient = await this.getOrCreateClient(qoderOptions)
+          const qoderMessages = activeClient.receiveMessages()
+          await activeClient.query(prompt, sessionPlan.sessionId)
           let sdkMsgCount = 0
-          for await (const msg of qoderQuery) {
+          for await (const msg of qoderMessages) {
             sdkMsgCount++
             const m = msg as Record<string, unknown>
             debugLog(`SDK msg #${sdkMsgCount}: type=${m.type}${m.subtype ? ` subtype=${m.subtype}` : ''}`, streamTraceId)
@@ -860,6 +995,7 @@ export class QoderLanguageModel implements LanguageModelV2 {
                     totalTokens: (usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0),
                   },
                 })
+                this.commitSessionState(options.prompt, sessionPlan.sessionId)
               }
 
               // 清理残留 pending 工具调用
@@ -882,6 +1018,8 @@ export class QoderLanguageModel implements LanguageModelV2 {
           cleanup()
           controller.close()
         } catch (err) {
+          this.resetSessionState()
+          await this.resetClient()
           // 记录 catch 进入时，abort 是否已由外部（abortSignal / cancel）提前触发
           const wasExternallyAborted = cleanupCalled
           cleanup()
