@@ -146,40 +146,5 @@ describe('QoderProviderPlugin', () => {
       const servers = getMcpBridgeServers()
       expect(Object.keys(servers).length).toBe(0)
     })
-
-    it('检测 oh-my-opencode-slim agent 类型并注入 agent-bridge', async () => {
-      // 模拟 oh-my-opencode-slim 在 config.agent 中注入了自定义 agent
-      const hooks = await pluginModule.QoderProviderPlugin({} as any)
-      const config: Config = {
-        agent: {
-          explorer: { model: 'some-model' },
-          fixer: { model: 'some-model' },
-          designer: { model: 'some-model' },
-        },
-      } as any
-      await hooks.config!(config)
-
-      const { mapSubagentType } = await import('../src/agent-bridge.js')
-      // general-purpose 应被映射为 explorer
-      expect(mapSubagentType('general-purpose')).toBe('explorer')
-      // 已存在的类型应原样返回
-      expect(mapSubagentType('explorer')).toBe('explorer')
-    })
-
-    it('config.agent 中 disable=true 的 agent 不纳入可用类型', async () => {
-      const hooks = await pluginModule.QoderProviderPlugin({} as any)
-      const config: Config = {
-        agent: {
-          explorer: { model: 'some-model' },
-          general: { disable: true },
-        },
-      } as any
-      await hooks.config!(config)
-
-      const { mapSubagentType } = await import('../src/agent-bridge.js')
-      // general 被 disable，不在可用类型中
-      // general-purpose 应映射到 explorer
-      expect(mapSubagentType('general-purpose')).toBe('explorer')
-    })
   })
 })

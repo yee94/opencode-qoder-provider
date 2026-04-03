@@ -1,7 +1,7 @@
 import type { Plugin, Hooks } from '@opencode-ai/plugin'
 import { QODER_MODELS } from './src/models.js'
 import { setMcpBridgeServers } from './src/mcp-bridge.js'
-import { setAvailableAgentTypes } from './src/agent-bridge.js'
+// agent-bridge 已在 providerExecuted 模式下移除 — CLI 自主管理 subagent 类型
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -41,12 +41,8 @@ export const QoderProviderPlugin: Plugin = async () => {
       const bridgedMcp = convertOpencodeMcp(config.mcp)
       setMcpBridgeServers(bridgedMcp)
 
-      // 检测可用的 agent 类型：oh-my-opencode-slim 等插件会替换标准 agent 类型
-      // 此处从插件配置中提取实际可用的类型，供 normalizeToolInputObject 做映射
-      const detectedAgentTypes = detectAgentTypes(config)
-      if (detectedAgentTypes.length > 0) {
-        setAvailableAgentTypes(detectedAgentTypes)
-      }
+      // providerExecuted 模式下不再需要 agent type 映射
+      // CLI 自主管理 subagent 类型，opencode 不参与工具执行
 
       const mergedProviderOptions = {
         ...(existing.options ?? {}),

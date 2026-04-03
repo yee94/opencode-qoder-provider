@@ -16,12 +16,11 @@ import { randomUUID } from 'node:crypto'
 
 import {
   configure,
-  query,
+  QoderAgentSDKClient,
 } from './vendor/qoder-agent-sdk.mjs'
 
 import { buildPromptFromOptions } from './prompt-builder.js'
 import { getMcpBridgeServers } from './mcp-bridge.js'
-import { mapSubagentType } from './agent-bridge.js'
 
 // ── storageDir 解析 — 与 qodercli 行为对齐 ──────────────────────────────────
 // qodercli login 写入 ~/.qoder；QoderWork.app 写入 ~/.qoderwork。
@@ -135,10 +134,10 @@ function resolveQoderCLI(): string | undefined {
   return undefined
 }
 
-// ── 工具名称标准化 ────────────────────────────────────────────────────────────
+// ── 工具名称标准化（仅做展示映射，不再用于判断执行权） ─────────────────────────
 
 /**
- * CLI 工具名 → opencode 工具名 的标准化映射：
+ * CLI 工具名 → opencode 展示名 的标准化映射：
  *   - 大小写：Read → read, Bash → bash
  *   - CLI 内置特殊名：AskUserQuestion → question, Agent → task
  *   - MCP proxy 格式：mcp__context7__resolve-library-id → context7_resolve-library-id
@@ -166,119 +165,33 @@ function normalizeToolName(name: string): string {
   return lower
 }
 
-function normalizeToolInput(toolName: string, input: string): string {
-  let parsed: unknown
-  try {
-    parsed = input.trim() ? JSON.parse(input) : {}
-  } catch {
-    return input
+function arePromptMessagesEqual(
+  left: LanguageModelV2CallOptions['prompt'][number],
+  right: LanguageModelV2CallOptions['prompt'][number],
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function getSharedPromptPrefixLength(
+  previousPrompt: LanguageModelV2CallOptions['prompt'],
+  nextPrompt: LanguageModelV2CallOptions['prompt'],
+): number {
+  const max = Math.min(previousPrompt.length, nextPrompt.length)
+  let idx = 0
+  while (idx < max && arePromptMessagesEqual(previousPrompt[idx], nextPrompt[idx])) {
+    idx++
   }
-
-  const normalized = normalizeToolInputObject(toolName, parsed)
-  return JSON.stringify(normalized)
+  return idx
 }
 
-function normalizeToolInputObject(toolName: string, input: unknown): unknown {
-  if (!isRecord(input)) return input
-
-  switch (toolName) {
-    case 'read':
-      return renameKeys(input, {
-        file_path: 'filePath',
-      })
-
-    case 'write':
-      return renameKeys(input, {
-        file_path: 'filePath',
-      })
-
-    case 'edit':
-      return renameKeys(input, {
-        file_path: 'filePath',
-        old_string: 'oldString',
-        new_string: 'newString',
-        replace_all: 'replaceAll',
-      })
-
-    case 'grep': {
-      const next = renameKeys(input, {})
-      if (!pickString(next.include)) {
-        next.include = pickString(next.glob) ?? inferIncludeFromType(next.type)
-      }
-      delete next.glob
-      delete next.type
-      delete next.output_mode
-      delete next.multiline
-      delete next['-i']
-      delete next['-n']
-      delete next['-B']
-      delete next['-A']
-      delete next['-C']
-      delete next.head_limit
-      return next
-    }
-
-    case 'question': {
-      const next = renameKeys(input, {})
-      if (Array.isArray(next.questions)) {
-        next.questions = next.questions.map((question) => {
-          if (!isRecord(question)) return question
-          const mapped = renameKeys(question, {
-            multiSelect: 'multiple',
-          })
-          delete mapped.answers
-          return mapped
-        })
-      }
-      delete next.answers
-      return next
-    }
-
-    case 'todowrite': {
-      const next = renameKeys(input, {})
-      if (Array.isArray(next.todos)) {
-        next.todos = next.todos.map((todo) => {
-          if (!isRecord(todo)) return todo
-          const mapped = renameKeys(todo, {})
-          mapped.priority = pickString(mapped.priority) ?? 'medium'
-          delete mapped.activeForm
-          return mapped
-        })
-      }
-      return next
-    }
-
-    case 'skill':
-      return renameKeys(input, {
-        skill: 'name',
-      })
-
-    case 'task': {
-      const next = renameKeys(input, {})
-      const subagentType = pickString(next.subagent_type)
-      if (subagentType) {
-        next.subagent_type = mapSubagentType(subagentType)
-      }
-      return next
-    }
-
-    default:
-      return input
+function trimResumedDeltaPrompt(
+  deltaPrompt: LanguageModelV2CallOptions['prompt'],
+): LanguageModelV2CallOptions['prompt'] {
+  let start = 0
+  while (start < deltaPrompt.length && deltaPrompt[start]?.role === 'assistant') {
+    start++
   }
-}
-
-function renameKeys(
-  input: Record<string, unknown>,
-  keyMap: Record<string, string>,
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(input).map(([key, value]) => [keyMap[key] ?? key, value]),
-  )
-}
-
-function inferIncludeFromType(type: unknown): string | undefined {
-  const ext = pickString(type)
-  return ext ? `*.${ext}` : undefined
+  return deltaPrompt.slice(start)
 }
 
 
@@ -315,6 +228,8 @@ function buildQoderQueryOptions(
   includePartialMessages: true
   maxBufferSize: number
   sessionId: string
+  continue?: boolean
+  resume?: string
   cwd: string
   env: Record<string, string>
   pathToQoderCLIExecutable?: string
@@ -458,16 +373,127 @@ function normalizeMcpServerConfig(config: unknown): QoderMcpServerConfig | null 
 }
 
 // ── LanguageModelV2 实现 ──────────────────────────────────────────────────────
+//
+// 方向 A（providerExecuted 模式）：
+//
+// Qoder CLI 作为完整 agent，自主执行所有工具（Bash/Read/Write/Grep/MCP 等）。
+// Provider 只做"消息格式转换 + 流式转发"：
+//   - 所有 tool-call 标记 providerExecuted: true
+//   - tool-result 从 SDK user message 中提取并回传给 opencode UI 展示
+//   - finishReason 始终为 'stop'（CLI 跑完整个 agent loop 才返回 result）
+//
+// 相比旧架构，彻底消除了：
+//   - normalizeToolInput() 的字段翻译
+//   - agent-bridge 的 subagent type 映射
+//   - suppressFurtherAssistantContent 外部等待机制
+//   - pendingToolCalls / emittedFunctionToolCall 双重追踪
+//   - finishReason 'tool-calls' vs 'stop' 的复杂判断
 
 export class QoderLanguageModel implements LanguageModelV2 {
   readonly specificationVersion = 'v2' as const
   readonly provider = 'qoder'
   readonly supportedUrls: Record<string, RegExp[]> = {}
+  private activeSessionId?: string
+  private previousPrompt?: LanguageModelV2CallOptions['prompt']
+  private activeClient?: QoderAgentSDKClient
+  private activeClientSignature?: string
 
   constructor(
     public readonly modelId: string,
     private readonly providerOptions?: QoderProviderOptions,
   ) {}
+
+  private buildSessionPlan(options: LanguageModelV2CallOptions): {
+    effectivePrompt: LanguageModelV2CallOptions['prompt']
+    sessionId: string
+    continueSession: boolean
+    resumeSessionId?: string
+  } {
+    const freshSessionId = randomUUID()
+    const previousPrompt = this.previousPrompt
+    const activeSessionId = this.activeSessionId
+
+    if (!previousPrompt || !activeSessionId) {
+      return {
+        effectivePrompt: options.prompt,
+        sessionId: freshSessionId,
+        continueSession: false,
+      }
+    }
+
+    const sharedPrefixLength = getSharedPromptPrefixLength(previousPrompt, options.prompt)
+    const isExtension = sharedPrefixLength === previousPrompt.length && options.prompt.length >= previousPrompt.length
+    if (!isExtension) {
+      return {
+        effectivePrompt: options.prompt,
+        sessionId: freshSessionId,
+        continueSession: false,
+      }
+    }
+
+    const rawDeltaPrompt = options.prompt.slice(sharedPrefixLength)
+    const deltaPrompt = trimResumedDeltaPrompt(rawDeltaPrompt)
+    if (deltaPrompt.length === 0 || deltaPrompt[0]?.role !== 'user') {
+      return {
+        effectivePrompt: options.prompt,
+        sessionId: freshSessionId,
+        continueSession: false,
+      }
+    }
+
+    return {
+      effectivePrompt: deltaPrompt,
+      sessionId: activeSessionId,
+      continueSession: false,
+      resumeSessionId: activeSessionId,
+    }
+  }
+
+  private commitSessionState(prompt: LanguageModelV2CallOptions['prompt'], sessionId: string): void {
+    this.previousPrompt = prompt
+    this.activeSessionId = sessionId
+  }
+
+  private resetSessionState(): void {
+    this.previousPrompt = undefined
+    this.activeSessionId = undefined
+  }
+
+  private buildClientSignature(options: ReturnType<typeof buildQoderQueryOptions>): string {
+    const mcpServerKeys = Object.keys(options.mcpServers ?? {}).sort()
+    const extraArgKeys = Object.keys(options.extraArgs ?? {}).sort()
+    return JSON.stringify({
+      model: options.model,
+      cwd: options.cwd,
+      cli: options.pathToQoderCLIExecutable,
+      mcpServerKeys,
+      extraArgKeys,
+    })
+  }
+
+  private async resetClient(): Promise<void> {
+    if (this.activeClient) {
+      await this.activeClient.disconnect().catch(() => { /* ignore */ })
+    }
+    this.activeClient = undefined
+    this.activeClientSignature = undefined
+  }
+
+  private async getOrCreateClient(
+    options: ReturnType<typeof buildQoderQueryOptions>,
+  ): Promise<QoderAgentSDKClient> {
+    const signature = this.buildClientSignature(options)
+    if (this.activeClient && this.activeClientSignature === signature) {
+      return this.activeClient
+    }
+
+    await this.resetClient()
+    const client = new QoderAgentSDKClient(options)
+    await client.connect()
+    this.activeClient = client
+    this.activeClientSignature = signature
+    return client
+  }
 
   async doGenerate(options: LanguageModelV2CallOptions) {
     const { stream } = await this.doStream(options)
@@ -510,40 +536,31 @@ export class QoderLanguageModel implements LanguageModelV2 {
   async doStream(options: LanguageModelV2CallOptions): Promise<{
     stream: ReadableStream<LanguageModelV2StreamPart>
   }> {
+    const sessionPlan = this.buildSessionPlan(options)
+    const effectiveOptions = {
+      ...options,
+      prompt: sessionPlan.effectivePrompt,
+    }
     const cliPath = resolveQoderCLI()
-    const qoderOptions = buildQoderQueryOptions(options, this.modelId, cliPath, this.providerOptions)
-    const prompt = buildPromptFromOptions(options, qoderOptions.sessionId)
+    const qoderOptions = {
+      ...buildQoderQueryOptions(effectiveOptions, this.modelId, cliPath, this.providerOptions),
+      sessionId: sessionPlan.sessionId,
+    }
+    const prompt = buildPromptFromOptions(effectiveOptions, qoderOptions.sessionId)
 
     const streamTraceId = randomUUID().slice(0, 8)
     debugLog(`doStream() called, modelId=${this.modelId}, cliPath=${cliPath}`, streamTraceId)
     debugLog(`doStream() prompt length=${typeof prompt === 'string' ? prompt.length : 'non-string'}`, streamTraceId)
     debugLog(`doStream() qoderOptions.mcpServers=[${Object.keys(qoderOptions.mcpServers ?? {}).join(',')}]`, streamTraceId)
 
-    // opencode function 工具名集合（由 opencode 管理并执行，如 bash、read、context7_resolve-library-id 等）
-    // 这些工具调用不带 providerExecuted，让 opencode 负责执行
-    // CLI 内置工具（Bash/Read/Write 等）经 normalizeToolName 转小写后若匹配则由 opencode 执行
-    // CLI MCP proxy 工具（mcp__server__tool）经 normalizeToolName 转为 server_tool 后若匹配同理
-    // 不在此集合中的工具由 CLI 自行执行 — 不向 opencode 发 tool 事件
-    const hasTools = (options.tools ?? []).some((t) => t.type === 'function')
-    const functionToolNames = new Set(
-      (options.tools ?? [])
-        .filter((t) => t.type === 'function')
-        .map((t) => normalizeToolName(t.name))
-    )
-    debugLog(`doStream() hasTools=${hasTools}, functionToolNames=[${[...functionToolNames].join(',')}]`, streamTraceId)
+    let activeClient: QoderAgentSDKClient | undefined
 
-    // 每次 query 独立的 AbortController，用于中断后台 qodercli 进程
-    const abortController = new AbortController()
-
-    // 幂等清理函数：abort + 结束 query 异步生成器，避免重复调用抛错
+    // 幂等清理函数：中断当前 client query，避免重复调用抛错
     let cleanupCalled = false
-    let qoderQueryRef: AsyncGenerator<unknown, void, undefined> | null = null
     function cleanup() {
       if (cleanupCalled) return
       cleanupCalled = true
-      abortController.abort()
-      // return() 通知生成器提前结束，触发 SDK/qodercli 清理路径
-      void qoderQueryRef?.return(undefined).catch(() => { /* ignore */ })
+      void activeClient?.interrupt().catch(() => { /* ignore */ })
     }
 
     // 监听外部 abortSignal：opencode 中断时立即触发清理
@@ -564,44 +581,33 @@ export class QoderLanguageModel implements LanguageModelV2 {
         // ── stream-start：AI SDK v2 协议要求在任何内容前显式发出 ──────────
         controller.enqueue({ type: 'stream-start', warnings: [] })
 
-        // ── text block 状态管理 ──────────────────────────────────────────
+        // ── 状态管理（大幅简化：不再需要 pending/emitted/suppress 三重追踪） ──
         let textBlockCounter = 0
         let hasFinish = false
 
         // stream_event 路径：按 index 跟踪活跃内容块
         const activeStreamTextBlocks = new Set<number>()
         const activeStreamReasoningBlocks = new Set<number>()
-        const streamToolBlocks = new Map<number, { id: string; name: string; input: string; isProviderExecuted: boolean }>()
+        const streamToolBlocks = new Map<number, { id: string; name: string; inputJson: string }>()
 
         // 已通过 stream_event 发出的标志（防 assistant 消息重复发）
         let sawStreamEventText = false
         let sawStreamEventTool = false
         let sawStreamEventReasoning = false
 
-        // tool_use_id → {toolName, input, isProviderExecuted} 映射（用于 tool_result 时查找）
-        const pendingToolCalls = new Map<string, { toolName: string; input: string; isProviderExecuted: boolean }>()
-
-        // 对于 task 子代理工具，Qoder/SDK 可能在同一 query 中回放 tool_result，
-        // 但 opencode 仍需继续等待真正的子代理执行结果，因此不能立即视为完成。
-        const waitForExternalCompletionToolNames = new Set(['task'])
-
-        // 是否向 opencode 发出了 function tool-call（决定 finishReason）
-        let emittedFunctionToolCall = false
-
-        // 最近一次 assistant message 的 stop_reason（来自 stream_event.message_delta）
-        // 典型值：tool_use / end_turn
-        let lastAssistantStopReason: string | undefined
-
-        // 一旦 task 这类需要外部完成的 function tool 已经发出并收到 SDK 回放的 tool_result，
-        // 当前轮后续 assistant/text/tool 输出都应被抑制；上层必须等真实工具结果后再发起下一轮。
-        let suppressFurtherAssistantContent = false
+        // tool_use_id → toolName 映射（用于 tool_result 时关联工具名）
+        const toolCallsById = new Map<string, { name: string }>()
 
         try {
-          // query() 是单次查询的最优路径（QoderAgentSDKClient 是双向交互会话，每次 connect() 冷启动更慢）
-          const qoderQuery = query({ prompt, options: { ...qoderOptions, abortController } })
-          qoderQueryRef = qoderQuery
+          if (!sessionPlan.resumeSessionId) {
+            this.resetSessionState()
+            await this.resetClient()
+          }
+          activeClient = await this.getOrCreateClient(qoderOptions)
+          const qoderMessages = activeClient.receiveMessages()
+          await activeClient.query(prompt, sessionPlan.sessionId)
           let sdkMsgCount = 0
-          for await (const msg of qoderQuery) {
+          for await (const msg of qoderMessages) {
             sdkMsgCount++
             const m = msg as Record<string, unknown>
             debugLog(`SDK msg #${sdkMsgCount}: type=${m.type}${m.subtype ? ` subtype=${m.subtype}` : ''}`, streamTraceId)
@@ -613,17 +619,6 @@ export class QoderLanguageModel implements LanguageModelV2 {
 
             // ── stream_event：增量文本 / 增量工具输入（流式 CLI 支持时） ──
             if (m.type === 'stream_event') {
-              if (suppressFurtherAssistantContent) {
-                const ev = (m as { event: Record<string, unknown> }).event
-                if (ev.type === 'message_delta' && isRecord(ev.delta) && typeof ev.delta.stop_reason === 'string') {
-                  lastAssistantStopReason = ev.delta.stop_reason
-                  debugLog(`message_delta (suppressed): stop_reason=${ev.delta.stop_reason}`, streamTraceId)
-                } else {
-                  debugLog(`suppressed stream_event after external-wait state: ${String(ev.type)}`, streamTraceId)
-                }
-                continue
-              }
-
               const ev = (m as { event: Record<string, unknown> }).event
 
               if (ev.type === 'content_block_start' && isRecord(ev.content_block)) {
@@ -633,17 +628,14 @@ export class QoderLanguageModel implements LanguageModelV2 {
                 if (block.type === 'tool_use' && typeof block.id === 'string' && typeof block.name === 'string') {
                   sawStreamEventTool = true
                   const toolName = normalizeToolName(block.name)
-                  // normalizeToolName 统一处理：大小写 + AskUserQuestion→question + mcp__server__tool→server_tool
-                  const isProviderExecuted = hasTools && !functionToolNames.has(toolName)
-                  debugLog(`tool_use block_start: raw=${block.name} → normalized=${toolName}, inFunctionTools=${functionToolNames.has(toolName)}, isProviderExecuted=${isProviderExecuted}`, streamTraceId)
-                  streamToolBlocks.set(idx, { id: block.id, name: toolName, input: '', isProviderExecuted })
-                  if (!isProviderExecuted) {
-                    controller.enqueue({
-                      type: 'tool-input-start',
-                      id: block.id,
-                      toolName,
-                    } as LanguageModelV2StreamPart)
-                  }
+                  debugLog(`tool_use block_start: raw=${block.name} → normalized=${toolName}`, streamTraceId)
+                  streamToolBlocks.set(idx, { id: block.id, name: toolName, inputJson: '' })
+                  // providerExecuted 模式：所有工具都展示给 opencode UI
+                  controller.enqueue({
+                    type: 'tool-input-start',
+                    id: block.id,
+                    toolName,
+                  } as LanguageModelV2StreamPart)
                 } else if (block.type === 'thinking') {
                   activeStreamReasoningBlocks.add(idx)
                   controller.enqueue({ type: 'reasoning-start', id: String(idx) })
@@ -672,14 +664,12 @@ export class QoderLanguageModel implements LanguageModelV2 {
                 } else if (delta.type === 'input_json_delta' && typeof delta.partial_json === 'string') {
                   const toolBlock = streamToolBlocks.get(idx)
                   if (toolBlock) {
-                    toolBlock.input += delta.partial_json
-                    if (!toolBlock.isProviderExecuted) {
-                      controller.enqueue({
-                        type: 'tool-input-delta',
-                        id: toolBlock.id,
-                        delta: delta.partial_json,
-                      } as LanguageModelV2StreamPart)
-                    }
+                    toolBlock.inputJson += delta.partial_json
+                    controller.enqueue({
+                      type: 'tool-input-delta',
+                      id: toolBlock.id,
+                      delta: delta.partial_json,
+                    } as LanguageModelV2StreamPart)
                   }
                 }
               } else if (ev.type === 'content_block_stop') {
@@ -687,29 +677,24 @@ export class QoderLanguageModel implements LanguageModelV2 {
                 const toolBlock = streamToolBlocks.get(idx)
 
                 if (toolBlock) {
-                  if (!toolBlock.isProviderExecuted) {
-                    const normalizedInput = normalizeToolInput(toolBlock.name, toolBlock.input)
-                    controller.enqueue({ type: 'tool-input-end', id: toolBlock.id } as LanguageModelV2StreamPart)
-                    controller.enqueue({
-                      type: 'tool-call',
-                      toolCallId: toolBlock.id,
-                      toolName: toolBlock.name,
-                      input: normalizedInput,
-                    } as LanguageModelV2StreamPart)
-                    emittedFunctionToolCall = true
-                    debugLog(`emitted tool-call to opencode: toolName=${toolBlock.name}, id=${toolBlock.id}`, streamTraceId)
-                    toolBlock.input = normalizedInput
+                  // 解析输入 JSON
+                  let parsedInput: unknown = {}
+                  try {
+                    parsedInput = JSON.parse(toolBlock.inputJson || '{}')
+                  } catch { /* keep empty object */ }
 
-                    if (waitForExternalCompletionToolNames.has(toolBlock.name)) {
-                      suppressFurtherAssistantContent = true
-                      debugLog(`enter external-wait state immediately after tool-call for toolName=${toolBlock.name}, tool_use_id=${toolBlock.id}`, streamTraceId)
-                    }
-                  }
-                  pendingToolCalls.set(toolBlock.id, {
+                  controller.enqueue({ type: 'tool-input-end', id: toolBlock.id } as LanguageModelV2StreamPart)
+                  // 核心变更：所有 tool-call 标记 providerExecuted: true
+                  controller.enqueue({
+                    type: 'tool-call',
+                    toolCallId: toolBlock.id,
                     toolName: toolBlock.name,
-                    input: toolBlock.input,
-                    isProviderExecuted: toolBlock.isProviderExecuted,
-                  })
+                    input: JSON.stringify(parsedInput),
+                    providerExecuted: true,
+                  } as LanguageModelV2StreamPart)
+                  debugLog(`emitted providerExecuted tool-call: toolName=${toolBlock.name}, id=${toolBlock.id}`, streamTraceId)
+
+                  toolCallsById.set(toolBlock.id, { name: toolBlock.name })
                   streamToolBlocks.delete(idx)
                 } else if (activeStreamReasoningBlocks.has(idx)) {
                   controller.enqueue({ type: 'reasoning-end', id: String(idx) })
@@ -719,17 +704,11 @@ export class QoderLanguageModel implements LanguageModelV2 {
                   activeStreamTextBlocks.delete(idx)
                 }
               } else if (ev.type === 'message_delta' && isRecord(ev.delta) && typeof ev.delta.stop_reason === 'string') {
-                lastAssistantStopReason = ev.delta.stop_reason
-                  debugLog(`message_delta: stop_reason=${ev.delta.stop_reason}`, streamTraceId)
+                debugLog(`message_delta: stop_reason=${ev.delta.stop_reason}`, streamTraceId)
               }
 
             // ── assistant：完整消息块（CLI 不支持流式时走此路径） ──────────
             } else if (m.type === 'assistant') {
-              if (suppressFurtherAssistantContent) {
-                debugLog('suppressed assistant message after external-wait state', streamTraceId)
-                continue
-              }
-
               const rawContent = (m.message as Record<string, unknown> | undefined)?.content
               const content = Array.isArray(rawContent) ? rawContent : []
               for (const block of content) {
@@ -747,42 +726,34 @@ export class QoderLanguageModel implements LanguageModelV2 {
                   controller.enqueue({ type: 'text-end', id: textId })
                 } else if (block.type === 'tool_use' && typeof block.id === 'string' && typeof block.name === 'string' && !sawStreamEventTool) {
                   const toolName = normalizeToolName(block.name)
-                  // normalizeToolName 统一处理：大小写 + AskUserQuestion→question + mcp__server__tool→server_tool
-                  const isProviderExecuted = hasTools && !functionToolNames.has(toolName)
-                  pendingToolCalls.set(block.id, { toolName, input: '', isProviderExecuted })
-                  if (!isProviderExecuted) {
-                    const rawInputJson = typeof block.input === 'string' ? block.input : JSON.stringify(block.input ?? {})
-                    const inputJson = normalizeToolInput(toolName, rawInputJson)
-                    controller.enqueue({
-                      type: 'tool-input-start',
-                      id: block.id,
-                      toolName,
-                    } as LanguageModelV2StreamPart)
-                    controller.enqueue({
-                      type: 'tool-input-delta',
-                      id: block.id,
-                      delta: inputJson,
-                    } as LanguageModelV2StreamPart)
-                    controller.enqueue({ type: 'tool-input-end', id: block.id } as LanguageModelV2StreamPart)
-                    controller.enqueue({
-                      type: 'tool-call',
-                      toolCallId: block.id,
-                      toolName,
-                      input: inputJson,
-                    } as LanguageModelV2StreamPart)
-                    emittedFunctionToolCall = true
-                    // 更新 input 到 pendingToolCalls
-                    pendingToolCalls.set(block.id, { toolName, input: inputJson, isProviderExecuted })
+                  const rawInputJson = typeof block.input === 'string' ? block.input : JSON.stringify(block.input ?? {})
 
-                    if (waitForExternalCompletionToolNames.has(toolName)) {
-                      suppressFurtherAssistantContent = true
-                      debugLog(`enter external-wait state immediately after assistant tool-call for toolName=${toolName}, tool_use_id=${block.id}`, streamTraceId)
-                    }
-                  }
+                  controller.enqueue({
+                    type: 'tool-input-start',
+                    id: block.id,
+                    toolName,
+                  } as LanguageModelV2StreamPart)
+                  controller.enqueue({
+                    type: 'tool-input-delta',
+                    id: block.id,
+                    delta: rawInputJson,
+                  } as LanguageModelV2StreamPart)
+                  controller.enqueue({ type: 'tool-input-end', id: block.id } as LanguageModelV2StreamPart)
+                  // 核心变更：所有 tool-call 标记 providerExecuted: true
+                  controller.enqueue({
+                    type: 'tool-call',
+                    toolCallId: block.id,
+                    toolName,
+                    input: rawInputJson,
+                    providerExecuted: true,
+                  } as LanguageModelV2StreamPart)
+                  debugLog(`emitted providerExecuted tool-call (assistant path): toolName=${toolName}, id=${block.id}`, streamTraceId)
+
+                  toolCallsById.set(block.id, { name: toolName })
                 }
               }
 
-            // ── user：工具执行结果（CLI 内部执行后返回） ─────────────────
+            // ── user：CLI 内部工具执行结果 → providerExecuted tool-result ──
             } else if (m.type === 'user') {
               const rawContent = (m.message as Record<string, unknown> | undefined)?.content
               const content = Array.isArray(rawContent) ? rawContent : []
@@ -790,29 +761,43 @@ export class QoderLanguageModel implements LanguageModelV2 {
                 if (!isRecord(block)) continue
                 if (block.type !== 'tool_result' || typeof block.tool_use_id !== 'string') continue
 
-                const toolCall = pendingToolCalls.get(block.tool_use_id)
-                debugLog(`tool_result: tool_use_id=${block.tool_use_id}, found=${!!toolCall}, toolName=${toolCall?.toolName}, isProviderExecuted=${toolCall?.isProviderExecuted}`, streamTraceId)
+                const toolCall = toolCallsById.get(block.tool_use_id)
+                debugLog(`tool_result: tool_use_id=${block.tool_use_id}, found=${!!toolCall}, toolName=${toolCall?.name}`, streamTraceId)
                 if (!toolCall) continue
 
-                // CLI 内置工具（isProviderExecuted=true）的结果由 provider 自己消费，
-                // 收到 tool_result 后可在同一 query 内清空 pending。
-                // opencode function 工具（isProviderExecuted=false）必须交给 opencode 执行，
-                // 即使 SDK 在同一 query 中又回放了 tool_result，也不能在这里清空 pending，
-                // 否则会把 finishReason 错判成 stop，导致上层不再等待真正的工具/子代理结果。
-                if (toolCall.isProviderExecuted) {
-                  pendingToolCalls.delete(block.tool_use_id)
-                } else if (!waitForExternalCompletionToolNames.has(toolCall.toolName)) {
-                  pendingToolCalls.delete(block.tool_use_id)
+                // 提取结果文本
+                let resultText = ''
+                if (typeof block.content === 'string') {
+                  resultText = block.content
+                } else if (Array.isArray(block.content)) {
+                  resultText = (block.content as unknown[])
+                    .filter((c): c is { type: string; text: string } =>
+                      isRecord(c) && c.type === 'text' && typeof c.text === 'string'
+                    )
+                    .map((c) => c.text)
+                    .join('\n')
                 }
+
+                // 核心新增：回传 providerExecuted tool-result 给 opencode UI 展示
+                controller.enqueue({
+                  type: 'tool-result',
+                  toolCallId: block.tool_use_id,
+                  toolName: toolCall.name,
+                  result: {
+                    output: resultText,
+                    title: toolCall.name,
+                    metadata: {},
+                  },
+                  providerExecuted: true,
+                } as LanguageModelV2StreamPart)
+                debugLog(`emitted providerExecuted tool-result: toolName=${toolCall.name}, id=${block.tool_use_id}`, streamTraceId)
+
+                toolCallsById.delete(block.tool_use_id)
               }
 
-            // ── result：会话结束 ────────────────────────────────────────
+            // ── result：CLI agent loop 结束 ─────────────────────────────
             } else if (m.type === 'result') {
-              const outstandingToolCallCount = pendingToolCalls.size
-              debugLog(`result: subtype=${m.subtype}, is_error=${m.is_error}, pendingToolCalls=${outstandingToolCallCount}, emittedFunctionToolCall=${emittedFunctionToolCall}, lastStopReason=${lastAssistantStopReason}`, streamTraceId)
-              if (outstandingToolCallCount > 0) {
-                debugLog(`result: outstanding tools: ${[...pendingToolCalls.entries()].map(([id, t]) => `${t.toolName}(${id},prov=${t.isProviderExecuted})`).join(', ')}`, streamTraceId)
-              }
+              debugLog(`result: subtype=${m.subtype}, is_error=${m.is_error}`, streamTraceId)
 
               // 关闭所有未关闭的文本块和推理块
               for (const idx of activeStreamReasoningBlocks) {
@@ -824,6 +809,15 @@ export class QoderLanguageModel implements LanguageModelV2 {
                 controller.enqueue({ type: 'text-end', id: String(idx) })
               }
               activeStreamTextBlocks.clear()
+
+              const wasExternallyAbortedResult =
+                cleanupCalled && m.subtype === 'error_during_execution'
+
+              if (wasExternallyAbortedResult) {
+                debugLog('result: suppressing error_during_execution after external abort/cancel', streamTraceId)
+                hasFinish = true
+                break
+              }
 
               const isError =
                 m.is_error === true ||
@@ -844,26 +838,20 @@ export class QoderLanguageModel implements LanguageModelV2 {
                 })
               } else {
                 const usage = m.usage as { input_tokens: number; output_tokens: number } | undefined
-                // 只有确实仍有待处理的 function tool call 时才返回 tool-calls。
-                // 注意：对于由 opencode 执行的 function 工具，同一 query 内即使看到了 SDK 回放的 tool_result，
-                // 也不会在 provider 内清空 pending；必须让上层继续等待真实工具结果并发起下一轮。
-                const hasOutstandingFunctionToolCalls = emittedFunctionToolCall && outstandingToolCallCount > 0
-                const mappedFinishReason: LanguageModelV2FinishReason =
-                  hasOutstandingFunctionToolCalls ? 'tool-calls' : 'stop'
-                debugLog(`finish: mappedFinishReason=${mappedFinishReason} (emittedFunctionToolCall=${emittedFunctionToolCall}, outstandingToolCallCount=${outstandingToolCallCount})`, streamTraceId)
+                // providerExecuted 模式：finishReason 始终为 'stop'
+                // CLI 完整跑完 agent loop 后才发 result，不需要 'tool-calls'
                 controller.enqueue({
                   type: 'finish',
-                  finishReason: decorateFinishReason(mappedFinishReason),
+                  finishReason: decorateFinishReason('stop'),
                   usage: {
                     inputTokens: usage?.input_tokens ?? 0,
                     outputTokens: usage?.output_tokens ?? 0,
                     totalTokens: (usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0),
                   },
                 })
+                this.commitSessionState(options.prompt, sessionPlan.sessionId)
               }
 
-              // 清理残留 pending 工具调用
-              pendingToolCalls.clear()
               hasFinish = true
               break  // result 是终止消息，退出迭代
             }
@@ -882,6 +870,8 @@ export class QoderLanguageModel implements LanguageModelV2 {
           cleanup()
           controller.close()
         } catch (err) {
+          this.resetSessionState()
+          await this.resetClient()
           // 记录 catch 进入时，abort 是否已由外部（abortSignal / cancel）提前触发
           const wasExternallyAborted = cleanupCalled
           cleanup()
