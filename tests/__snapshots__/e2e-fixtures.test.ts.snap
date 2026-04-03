@@ -149,3 +149,193 @@ exports[`captured e2e fixtures > ultimate-hello.json matches captured output 1`]
 ",
 }
 `;
+
+exports[`captured e2e fixtures auto-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/auto",
+  "name": "auto-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · auto
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures efficient-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/efficient",
+  "name": "efficient-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · efficient
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures gmodel-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/gmodel",
+  "name": "gmodel-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · gmodel
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures kmodel-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/kmodel",
+  "name": "kmodel-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · kmodel
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures lite-pong.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/lite",
+  "name": "lite-pong",
+  "prompt": "Reply with exactly the word: PONG",
+  "stderr": 
+"[0m
+> orchestrator · lite
+[0m
+"
+,
+  "stdout": 
+"PONG
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures mmodel-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/mmodel",
+  "name": "mmodel-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · mmodel
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures performance-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/performance",
+  "name": "performance-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · performance
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures q35model-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/q35model",
+  "name": "q35model-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · q35model
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures qmodel-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/qmodel",
+  "name": "qmodel-hello",
+  "prompt": "You MUST respond in English only. Reply with exactly the word: hello",
+  "stderr": 
+"[0m
+> orchestrator · qmodel
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;
+
+exports[`captured e2e fixtures ultimate-hello.json matches captured output 1`] = `
+{
+  "exitCode": 0,
+  "model": "qoder/ultimate",
+  "name": "ultimate-hello",
+  "prompt": "Say "hello" and nothing else.",
+  "stderr": 
+"[0m
+> orchestrator · ultimate
+[0m
+"
+,
+  "stdout": 
+"hello
+"
+,
+}
+`;

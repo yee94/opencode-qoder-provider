@@ -603,12 +603,11 @@ export class QoderLanguageModel implements LanguageModelV2 {
       // 缓存空闲，归还供下一次顺序调用复用
       this.activeClient = client
       this.activeClientSignature = signature
+    } else {
+      // 并发场景下 cache 已占满：此处 for-await 消息循环已完全结束，
+      // 不存在与 readMessagesLoop() 的竞争，安全调用 disconnect() 释放 qodercli 子进程。
+      void client.disconnect().catch(() => { /* ignore */ })
     }
-    // 并发场景下 cache 已占满：直接丢弃引用，不调用 disconnect()。
-    // 若 eager 调用 disconnect()，会触发 SubprocessTransport.close() 在后台
-    // readMessagesLoop() 的 async generator 还未完成时就将 this.process 设为 null，
-    // 导致 readMessages() 在 line 902 访问 this.process.exitCode 时抛出 TypeError，
-    // 进而造成 Bun 进程崩溃。qodercli 会在完成 query 后自行退出，JS 对象由 GC 回收。
   }
 
   async doGenerate(options: LanguageModelV2CallOptions) {
@@ -769,10 +768,32 @@ export class QoderLanguageModel implements LanguageModelV2 {
                 if (ev.type === 'message_delta' && isRecord(ev.delta) && typeof ev.delta.stop_reason === 'string') {
                   lastAssistantStopReason = ev.delta.stop_reason
                   debugLog(`message_delta (suppressed): stop_reason=${ev.delta.stop_reason}`, streamTraceId)
+                  continue
+                } else if (ev.type === 'content_block_start' && isRecord(ev.content_block)) {
+                  // 仅允许后续的 task 类工具调用通过；其余内容（text/thinking/非task工具）一律压制
+                  const block = ev.content_block
+                  if (block.type === 'tool_use' && typeof block.name === 'string' && waitForExternalCompletionToolNames.has(normalizeToolName(block.name))) {
+                    // 是另一个 task tool-call —— 让它继续正常处理
+                    debugLog(`allowed additional task tool_use block_start after external-wait state: ${block.name}`, streamTraceId)
+                  } else {
+                    debugLog(`suppressed stream_event after external-wait state: ${String(ev.type)} block.type=${String((isRecord(ev.content_block) && ev.content_block.type) || 'unknown')}`, streamTraceId)
+                    continue
+                  }
+                } else if (ev.type === 'content_block_delta' || ev.type === 'content_block_stop') {
+                  // delta/stop：仅允许属于 task 工具 block 的事件通过
+                  const idx = typeof ev.index === 'number' ? ev.index : 0
+                  const toolBlock = streamToolBlocks.get(idx)
+                  if (toolBlock && waitForExternalCompletionToolNames.has(toolBlock.name)) {
+                    // 属于 task block —— 继续正常处理
+                    debugLog(`allowed task tool block_${ev.type} after external-wait state: idx=${idx} name=${toolBlock.name}`, streamTraceId)
+                  } else {
+                    debugLog(`suppressed stream_event after external-wait state: ${String(ev.type)} idx=${idx}`, streamTraceId)
+                    continue
+                  }
                 } else {
                   debugLog(`suppressed stream_event after external-wait state: ${String(ev.type)}`, streamTraceId)
+                  continue
                 }
-                continue
               }
 
               const ev = (m as { event: Record<string, unknown> }).event
@@ -876,15 +897,35 @@ export class QoderLanguageModel implements LanguageModelV2 {
 
             // ── assistant：完整消息块（CLI 不支持流式时走此路径） ──────────
             } else if (m.type === 'assistant') {
-              if (suppressFurtherAssistantContent) {
-                debugLog('suppressed assistant message after external-wait state', streamTraceId)
-                continue
-              }
-
               const rawContent = (m.message as Record<string, unknown> | undefined)?.content
               const content = Array.isArray(rawContent) ? rawContent : []
+
+              if (suppressFurtherAssistantContent) {
+                // 仅允许后续的 task 类工具调用通过；其余内容（text/thinking/非task工具）一律压制
+                const hasTaskBlocks = content.some(
+                  (block) => isRecord(block) && block.type === 'tool_use' &&
+                    typeof block.name === 'string' && waitForExternalCompletionToolNames.has(normalizeToolName(block.name))
+                )
+                if (!hasTaskBlocks) {
+                  debugLog('suppressed assistant message after external-wait state (no task blocks)', streamTraceId)
+                  continue
+                }
+                debugLog('assistant message after external-wait state: processing task blocks only', streamTraceId)
+              }
+
               for (const block of content) {
                 if (!isRecord(block)) continue
+
+                // external-wait 状态下，跳过非 task 块（text/thinking/非task工具）
+                if (suppressFurtherAssistantContent) {
+                  if (block.type === 'tool_use' && typeof block.name === 'string' &&
+                    waitForExternalCompletionToolNames.has(normalizeToolName(block.name))) {
+                    // task 工具块 —— 继续正常处理
+                  } else {
+                    debugLog(`suppressed assistant block after external-wait state: type=${String(block.type)}`, streamTraceId)
+                    continue
+                  }
+                }
 
                 if (block.type === 'thinking' && typeof block.thinking === 'string' && block.thinking && !sawStreamEventReasoning) {
                   const reasoningId = String(textBlockCounter++)

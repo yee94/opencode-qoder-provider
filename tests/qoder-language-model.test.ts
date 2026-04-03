@@ -2572,6 +2572,105 @@ describe('QoderLanguageModel', () => {
       expect((finish as any).finishReason).toBe('tool-calls')
     })
 
+    it('同一 query 中多个 task tool-call 应全部发出给 opencode（并行委派场景）', async () => {
+      // task_1
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'call_task_parallel_001', name: 'Task' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{"description":"Task A","prompt":"echo 1","subagent_type":"general-purpose"}' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_stop', index: 0 } })
+      // task_2
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_start', index: 1, content_block: { type: 'tool_use', id: 'call_task_parallel_002', name: 'Task' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '{"description":"Task B","prompt":"echo 1","subagent_type":"general-purpose"}' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_stop', index: 1 } })
+      // task_3
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_start', index: 2, content_block: { type: 'tool_use', id: 'call_task_parallel_003', name: 'Task' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_delta', index: 2, delta: { type: 'input_json_delta', partial_json: '{"description":"Task C","prompt":"echo 1","subagent_type":"general-purpose"}' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_stop', index: 2 } })
+      // SDK 回放 tool_result（同一 query 内）
+      mockMessages.push({ type: 'user', message: { content: [
+        { type: 'tool_result', tool_use_id: 'call_task_parallel_001', content: 'Tool execution aborted' },
+        { type: 'tool_result', tool_use_id: 'call_task_parallel_002', content: 'Tool execution aborted' },
+        { type: 'tool_result', tool_use_id: 'call_task_parallel_003', content: 'Tool execution aborted' },
+      ] } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'message_delta', delta: { stop_reason: 'tool_use' } } })
+      pushSuccessResult()
+
+      const model = new QoderLanguageModel('auto')
+      const parts = await collectStream(
+        (
+          await model.doStream(
+            buildCallOptions('ping', {
+              tools: [
+                { type: 'function', name: 'task', description: 'Task', inputSchema: { type: 'object', properties: {} } },
+              ],
+            }),
+          )
+        ).stream,
+      )
+
+      const toolCalls = parts.filter((p) => p.type === 'tool-call')
+      expect(toolCalls).toHaveLength(3)
+      expect((toolCalls[0] as any).toolName).toBe('task')
+      expect((toolCalls[0] as any).toolCallId).toBe('call_task_parallel_001')
+      expect((toolCalls[1] as any).toolName).toBe('task')
+      expect((toolCalls[1] as any).toolCallId).toBe('call_task_parallel_002')
+      expect((toolCalls[2] as any).toolName).toBe('task')
+      expect((toolCalls[2] as any).toolCallId).toBe('call_task_parallel_003')
+
+      const finish = parts.find((p) => p.type === 'finish')
+      expect(finish).toBeDefined()
+      expect((finish as any).finishReason).toBe('tool-calls')
+    })
+
+    it('task 后的 text 和非 task 工具应被压制，但后续另一个 task 应继续发出', async () => {
+      // task_1
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'call_task_mixed_001', name: 'Task' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{"description":"Task A","prompt":"echo 1","subagent_type":"general-purpose"}' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_stop', index: 0 } })
+      // text after task (应被压制)
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_start', index: 1, content_block: { type: 'text', text: '' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: '这段文本不应在 task 后继续出现' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_stop', index: 1 } })
+      // bash after task (应被压制)
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_start', index: 2, content_block: { type: 'tool_use', id: 'call_bash_mixed', name: 'bash' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_delta', index: 2, delta: { type: 'input_json_delta', partial_json: '{"command":"ls"}' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_stop', index: 2 } })
+      // task_2 after task_1 + text + bash (应继续发出)
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_start', index: 3, content_block: { type: 'tool_use', id: 'call_task_mixed_002', name: 'Task' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_delta', index: 3, delta: { type: 'input_json_delta', partial_json: '{"description":"Task B","prompt":"echo 1","subagent_type":"general-purpose"}' } } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'content_block_stop', index: 3 } })
+      mockMessages.push({ type: 'stream_event', event: { type: 'message_delta', delta: { stop_reason: 'tool_use' } } })
+      pushSuccessResult()
+
+      const model = new QoderLanguageModel('auto')
+      const parts = await collectStream(
+        (
+          await model.doStream(
+            buildCallOptions('ping', {
+              tools: [
+                { type: 'function', name: 'task', description: 'Task', inputSchema: { type: 'object', properties: {} } },
+                { type: 'function', name: 'bash', description: 'Run bash', inputSchema: { type: 'object', properties: {} } },
+              ],
+            }),
+          )
+        ).stream,
+      )
+
+      // 只有 task_1 和 task_2 发出，bash 被压制
+      const toolCalls = parts.filter((p) => p.type === 'tool-call')
+      expect(toolCalls).toHaveLength(2)
+      expect((toolCalls[0] as any).toolName).toBe('task')
+      expect((toolCalls[0] as any).toolCallId).toBe('call_task_mixed_001')
+      expect((toolCalls[1] as any).toolName).toBe('task')
+      expect((toolCalls[1] as any).toolCallId).toBe('call_task_mixed_002')
+
+      // text 被压制
+      const textDeltas = parts.filter((p) => p.type === 'text-delta')
+      expect(textDeltas).toHaveLength(0)
+
+      const finish = parts.find((p) => p.type === 'finish')
+      expect((finish as any).finishReason).toBe('tool-calls')
+    })
+
     // ── abort/cancel 清理测试 ─────────────────────────────────────────────────
 
     it('options.abortSignal.abort() 后，stream 不应悬挂', async () => {
