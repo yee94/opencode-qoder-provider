@@ -585,15 +585,30 @@ export class QoderLanguageModel implements LanguageModelV2 {
   ): Promise<QoderAgentSDKClient> {
     const signature = this.buildClientSignature(options)
     if (this.activeClient && this.activeClientSignature === signature) {
-      return this.activeClient
+      // "检出" client：从缓存移除，防止并发调用共享同一个 subprocess client
+      const client = this.activeClient
+      this.activeClient = undefined
+      this.activeClientSignature = undefined
+      return client
     }
 
     await this.resetClient()
     const client = new QoderAgentSDKClient(options)
     await client.connect()
-    this.activeClient = client
-    this.activeClientSignature = signature
     return client
+  }
+
+  private returnClientToCache(client: QoderAgentSDKClient, signature: string): void {
+    if (!this.activeClient) {
+      // 缓存空闲，归还供下一次顺序调用复用
+      this.activeClient = client
+      this.activeClientSignature = signature
+    }
+    // 并发场景下 cache 已占满：直接丢弃引用，不调用 disconnect()。
+    // 若 eager 调用 disconnect()，会触发 SubprocessTransport.close() 在后台
+    // readMessagesLoop() 的 async generator 还未完成时就将 this.process 设为 null，
+    // 导致 readMessages() 在 line 902 访问 this.process.exitCode 时抛出 TypeError，
+    // 进而造成 Bun 进程崩溃。qodercli 会在完成 query 后自行退出，JS 对象由 GC 回收。
   }
 
   async doGenerate(options: LanguageModelV2CallOptions) {
@@ -733,6 +748,7 @@ export class QoderLanguageModel implements LanguageModelV2 {
             await this.resetClient()
           }
           activeClient = await this.getOrCreateClient(qoderOptions)
+          const checkedOutSignature = this.buildClientSignature(qoderOptions)
           const qoderMessages = activeClient.receiveMessages()
           await activeClient.query(prompt, sessionPlan.sessionId)
           let sdkMsgCount = 0
@@ -1025,11 +1041,14 @@ export class QoderLanguageModel implements LanguageModelV2 {
             })
           }
           debugLog('stream complete, closing controller', streamTraceId)
+          if (activeClient) {
+            this.returnClientToCache(activeClient, checkedOutSignature)
+          }
           cleanup()
           controller.close()
         } catch (err) {
           this.resetSessionState()
-          await this.resetClient()
+          await activeClient?.disconnect().catch(() => { /* ignore */ })
           // 记录 catch 进入时，abort 是否已由外部（abortSignal / cancel）提前触发
           const wasExternallyAborted = cleanupCalled
           cleanup()
