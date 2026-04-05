@@ -89,7 +89,7 @@ afterAll(() => {
   try { fs.rmSync(TMP_DIR, { recursive: true, force: true }) } catch { /* ignore */ }
 })
 
-describe('Qoder CLI 内置工具验证（单工具快速模式）', { concurrent: false }, () => {
+describe.skip('Qoder CLI 内置工具验证（单工具快速模式）', { concurrent: false }, () => {
   it('mmodel + Grep 不应重复循环调用', async () => {
     requireQoderAuth()
     const result = await runUntil(

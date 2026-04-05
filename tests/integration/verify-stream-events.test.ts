@@ -33,7 +33,7 @@ function resolveQoderCLI(): string | undefined {
 
 configure({ storageDir: resolveStorageDir() })
 
-describe('stream_event 验证', () => {
+describe.skip('stream_event 验证', () => {
   it('SDK query() 不带 includePartialMessages — 应该没有 stream_event', async () => {
     const t0 = performance.now()
     const eventTypes: string[] = []

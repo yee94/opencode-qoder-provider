@@ -75,7 +75,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
   },
   q35model_preview: {
     id: 'q35model_preview',
-    name: 'Qwen3.6-plus-preview (0x)',
+    name: 'Qwen3.6-Plus-DogFooding (0x)',
     attachment: true,
     reasoning: false,
     temperature: false,
@@ -85,7 +85,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
   },
   qmodel: {
     id: 'qmodel',
-    name: 'Qwen-Coder-Qoder-1.0 (0.2x)',
+    name: 'Qwen3.6-Plus (0.2x)',
     attachment: true,
     reasoning: false,
     temperature: false,

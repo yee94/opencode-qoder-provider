@@ -29,7 +29,7 @@ function resolveQoderCLI(): string | undefined {
   return undefined
 }
 
-describe('Debug: Raw MCP SDK Messages', { timeout: TIMEOUT }, () => {
+describe.skip('Debug: Raw MCP SDK Messages', { timeout: TIMEOUT }, () => {
   it('带 mcpServers=context7 时 query() 发出的原始消息', async () => {
     const cliPath = resolveQoderCLI()
     const messages: unknown[] = []

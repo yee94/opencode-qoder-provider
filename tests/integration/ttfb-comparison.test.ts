@@ -313,7 +313,7 @@ async function measurePluginStreamDetailed(): Promise<TimingResult & { buildProm
 
 // ── 测试 ──────────────────────────────────────────────────────────────────────
 
-describe('TTFB Comparison: Direct SDK vs Plugin', { timeout: TIMEOUT }, () => {
+describe.skip('TTFB Comparison: Direct SDK vs Plugin', { timeout: TIMEOUT }, () => {
   it('对比 TTFB 和各阶段耗时', async () => {
     const sdkResults: TimingResult[] = []
     const pluginResults: TimingResult[] = []

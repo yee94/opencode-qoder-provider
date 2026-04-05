@@ -91,7 +91,8 @@ After editing `src/models.ts`, also update the model table in `README.md` (both 
 | `performance` | Performance (1.1x) | 180K | 32768 | ✓ | ✗ |
 | `efficient` | Efficient (0.3x) | 180K | 32768 | ✓ | ✗ |
 | `lite` | Lite (free) | 180K | 32768 | ✗ | ✗ |
-| `qmodel` | Qwen-Coder-Qoder-1.0 (0.2x) | 180K | 32768 | ✓ | ✗ |
+| `q35model_preview` | Qwen3.6-Plus-DogFooding (0x) | 180K | 32768 | ✓ | ✗ |
+| `qmodel` | Qwen3.6-Plus (0.2x) | 180K | 32768 | ✓ | ✗ |
 | `q35model` | Qwen3.5-Plus (0.2x) | 180K | 32768 | ✓ | ✗ |
 | `gmodel` | GLM-5 (0.5x) | 180K | 32768 | ✓ | ✗ |
 | `kmodel` | Kimi-K2.5 (0.3x) | 180K | 32768 | ✓ | ✗ |

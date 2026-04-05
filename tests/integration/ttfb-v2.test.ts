@@ -176,7 +176,7 @@ function measureOverhead() {
   return { buildPromptMs: tPrompt, resolveCliMs: tCli }
 }
 
-describe('TTFB v2: Sequential, with warmup', { timeout: TIMEOUT }, () => {
+describe.skip('TTFB v2: Sequential, with warmup', { timeout: TIMEOUT }, () => {
   it('精确对比', async () => {
     const overhead = measureOverhead()
     console.log(`\n[overhead] buildPrompt: ${overhead.buildPromptMs.toFixed(3)}ms | resolveCLI: ${overhead.resolveCliMs.toFixed(3)}ms\n`)

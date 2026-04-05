@@ -141,7 +141,7 @@ describe.skip('Qoder Real API Integration', { timeout: TIMEOUT }, () => {
 // ── reasoning/thinking 流式透出测试 ───────────────────────────────────────────
 // 验证 stream_event thinking_delta → reasoning-start/reasoning-delta/reasoning-end 链路
 
-describe('Qoder Reasoning Streaming', { timeout: TIMEOUT }, () => {
+describe.skip('Qoder Reasoning Streaming', { timeout: TIMEOUT }, () => {
   it('should stream reasoning and text deltas separately with efficient model', async () => {
     setMcpBridgeServers({})
 

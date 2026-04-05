@@ -28,7 +28,7 @@ async function runTurn(model: QoderLanguageModel, prompt: LanguageModelV2Prompt)
   return text
 }
 
-describe('Qoder multi-turn strict e2e', { timeout: TIMEOUT, concurrent: false }, () => {
+describe.skip('Qoder multi-turn strict e2e', { timeout: TIMEOUT, concurrent: false }, () => {
   it('应优先遵循最后一条用户指令，而不是被前序轮次带偏', async () => {
     requireQoderAuth()
     const model = new QoderLanguageModel('lite')

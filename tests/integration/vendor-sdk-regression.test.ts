@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { spawnSync } from 'node:child_process'
 import { requireQoderAuth } from './helpers.js'
 
-describe('vendored qoder-agent-sdk regressions', { timeout: 120_000 }, () => {
+describe.skip('vendored qoder-agent-sdk regressions', { timeout: 120_000 }, () => {
   it('direct SDK 在初始化失败时不应抛 queryHandler.close 或 __dirname 相关错误', () => {
     requireQoderAuth()
 

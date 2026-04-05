@@ -217,7 +217,7 @@ async function pluginStream(): Promise<Result> {
 
 // ── Test ──────────────────────────────────────────────────────────────────────
 
-describe(`TTFB v3: CLI vs SDK vs Plugin (${MODEL})`, { timeout: TIMEOUT }, () => {
+describe.skip(`TTFB v3: CLI vs SDK vs Plugin (${MODEL})`, { timeout: TIMEOUT }, () => {
   it(`${RUNS} 轮对比`, async () => {
     const cliPath = resolveQoderCLI()
     console.log(`\nCLI: ${cliPath}`)

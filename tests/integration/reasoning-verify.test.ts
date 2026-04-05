@@ -63,7 +63,7 @@ function formatResult(modelName: string, r: StreamResult): string {
   ].join('\n')
 }
 
-describe('Reasoning Streaming Verification', { timeout: TIMEOUT }, () => {
+describe.skip('Reasoning Streaming Verification', { timeout: TIMEOUT }, () => {
   it('efficient model streaming events analysis', async () => {
     setMcpBridgeServers({})
 

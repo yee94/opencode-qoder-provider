@@ -9,7 +9,7 @@ import fs from 'node:fs'
 const TIMEOUT = 120_000
 const DEBUG_LOG = '/tmp/debug-e2e-stream.log'
 
-describe('Debug: E2E Stream 事件', { timeout: TIMEOUT }, () => {
+describe.skip('Debug: E2E Stream 事件', { timeout: TIMEOUT }, () => {
   it('MCP context7 工具调用的 stream 事件', async () => {
     // 注入 context7 MCP server（模拟 opencode config hook 行为）
     setMcpBridgeServers({

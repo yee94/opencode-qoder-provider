@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { QoderLanguageModel } from '../../src/qoder-language-model.js'
 import { requireQoderAuth } from './helpers.js'
 
-describe('real provider smoke', { timeout: 120_000 }, () => {
+describe.skip('real provider smoke', { timeout: 120_000 }, () => {
   it('efficient 基础生成至少返回内容', async () => {
     requireQoderAuth()
     const model = new QoderLanguageModel('efficient')

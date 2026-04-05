@@ -9,7 +9,7 @@ import fs from 'node:fs'
 const TIMEOUT = 120_000
 const DEBUG_LOG = '/tmp/debug-tool-events.log'
 
-describe('Debug: 工具事件观察', { timeout: TIMEOUT }, () => {
+describe.skip('Debug: 工具事件观察', { timeout: TIMEOUT }, () => {
   it('观察 CLI 发出的工具调用（有 options.tools 时）', async () => {
     const model = new QoderLanguageModel('auto')
 

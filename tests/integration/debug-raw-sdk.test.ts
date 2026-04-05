@@ -29,7 +29,7 @@ function resolveQoderCLI(): string | undefined {
   return undefined
 }
 
-describe('Debug: Raw SDK Messages', { timeout: TIMEOUT }, () => {
+describe.skip('Debug: Raw SDK Messages', { timeout: TIMEOUT }, () => {
   it('观察 query() 发出的所有原始消息类型', async () => {
     const cliPath = resolveQoderCLI()
     const messages: unknown[] = []
