@@ -30,8 +30,10 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     reasoning: false,
     temperature: false,
     tool_call: true,
+    // Qoder 订阅制，实际成本由订阅计划决定，这里设为 0 让用户了解是包含在订阅中的
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    // context limit 设置为 200K tokens（Qoder 的实际上下文窗口）
+    limit: { context: 200000, output: 64000 },
   },
   efficient: {
     id: 'efficient',
@@ -41,7 +43,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   performance: {
     id: 'performance',
@@ -51,7 +53,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   ultimate: {
     id: 'ultimate',
@@ -61,7 +63,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   lite: {
     id: 'lite',
@@ -71,7 +73,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   q35model_preview: {
     id: 'q35model_preview',
@@ -81,7 +83,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   qmodel: {
     id: 'qmodel',
@@ -91,7 +93,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   q35model: {
     id: 'q35model',
@@ -101,7 +103,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   gmodel: {
     id: 'gmodel',
@@ -111,7 +113,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   kmodel: {
     id: 'kmodel',
@@ -121,7 +123,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
   mmodel: {
     id: 'mmodel',
@@ -131,7 +133,7 @@ export const QODER_MODELS: Record<string, QoderModelDefinition> = {
     temperature: false,
     tool_call: true,
     cost: { input: 0, output: 0, cache_read: 0, cache_write: 0 },
-    limit: { context: 180000, output: 32768 },
+    limit: { context: 200000, output: 64000 },
   },
 }
 
