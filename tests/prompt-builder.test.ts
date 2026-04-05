@@ -320,8 +320,8 @@ describe('buildPromptFromOptions', () => {
         ...Array.from({ length: 120 }, (_, idx) => ({
           role: idx % 2 === 0 ? 'user' : 'assistant',
           content: idx % 2 === 0
-            ? [{ type: 'text', text: `history-user-${idx}-${'x'.repeat(6000)}` }]
-            : [{ type: 'text', text: `history-assistant-${idx}-${'y'.repeat(6000)}` }],
+            ? [{ type: 'text', text: `history-user-${idx}-${'x'.repeat(12000)}` }]
+            : [{ type: 'text', text: `history-assistant-${idx}-${'y'.repeat(12000)}` }],
         })),
         { role: 'user', content: [{ type: 'text', text: 'latest question' }] },
       ],
@@ -330,6 +330,146 @@ describe('buildPromptFromOptions', () => {
     expect(prompt).toContain('<truncated_history count="')
     expect(prompt).toContain('latest question')
     expect(prompt).not.toContain('history-user-0-')
+  })
+
+  // === 上下文优化：compact 模式和工具输出截断 ===
+
+  it('早期历史中 assistant 文本被 compact 截断，最近历史保持完整', () => {
+    // 构造 15 条消息（超过 RECENT_HISTORY_MSG_COUNT=8），验证早期 assistant 被截断
+    const longText = 'A'.repeat(2000)
+    const prompt = buildPromptFromOptions({
+      ...BASE_OPTIONS,
+      prompt: [
+        // 早期轮次（应被 compact 截断）
+        { role: 'user', content: [{ type: 'text', text: 'round 1' }] },
+        { role: 'assistant', content: [{ type: 'text', text: `early-answer-${longText}` }] },
+        { role: 'user', content: [{ type: 'text', text: 'round 2' }] },
+        { role: 'assistant', content: [{ type: 'text', text: `early-answer-${longText}` }] },
+        { role: 'user', content: [{ type: 'text', text: 'round 3' }] },
+        { role: 'assistant', content: [{ type: 'text', text: `early-answer-${longText}` }] },
+        // 最近轮次（应保持完整，距离 lastUserIdx 在 RECENT_HISTORY_MSG_COUNT 内）
+        { role: 'user', content: [{ type: 'text', text: 'round 4' }] },
+        { role: 'assistant', content: [{ type: 'text', text: `recent-answer-${longText}` }] },
+        { role: 'user', content: [{ type: 'text', text: 'round 5' }] },
+        { role: 'assistant', content: [{ type: 'text', text: `recent-answer-${longText}` }] },
+        { role: 'user', content: [{ type: 'text', text: 'round 6' }] },
+        { role: 'assistant', content: [{ type: 'text', text: `recent-answer-${longText}` }] },
+        // 当前任务
+        { role: 'user', content: [{ type: 'text', text: 'current question' }] },
+      ],
+    }) as string
+
+    // 早期 assistant 应被截断（包含 truncated 标记）
+    expect(prompt).toContain('early-answer-')
+    expect(prompt).toContain('...[truncated,')
+    // 最近 assistant 应完整保留（包含完整 2000 字符的 A）
+    const recentAnswerIdx = prompt.lastIndexOf('recent-answer-')
+    const recentAnswerEnd = prompt.indexOf('</assistant>', recentAnswerIdx)
+    const recentBlock = prompt.slice(recentAnswerIdx, recentAnswerEnd)
+    expect(recentBlock).toContain(longText)
+    // 当前问题在历史之后
+    expect(prompt).toContain('current question')
+    // user 消息始终完整（不被 compact 截断）
+    expect(prompt).toContain('round 1')
+    expect(prompt).toContain('round 6')
+  })
+
+  it('早期历史中 tool-call 输入被 compact 截断', () => {
+    const longInput = JSON.stringify({ command: 'x'.repeat(1000) })
+    const prompt = buildPromptFromOptions({
+      ...BASE_OPTIONS,
+      prompt: [
+        // 早期轮次（距离 lastUserIdx > 8 条消息）
+        { role: 'user', content: [{ type: 'text', text: 'first' }] },
+        {
+          role: 'assistant',
+          content: [{
+            type: 'tool-call',
+            toolCallId: 'tc-compact-1',
+            toolName: 'Bash',
+            input: longInput,
+          }],
+        },
+        {
+          role: 'tool',
+          content: [{
+            type: 'tool-result',
+            toolCallId: 'tc-compact-1',
+            toolName: 'Bash',
+            output: [{ type: 'text', value: 'ok' }],
+          }],
+        },
+        // 填充，确保上面的消息在 compact 区
+        { role: 'user', content: [{ type: 'text', text: 'filler 1' }] },
+        { role: 'assistant', content: [{ type: 'text', text: 'filler' }] },
+        { role: 'user', content: [{ type: 'text', text: 'filler 2' }] },
+        { role: 'assistant', content: [{ type: 'text', text: 'filler' }] },
+        { role: 'user', content: [{ type: 'text', text: 'filler 3' }] },
+        { role: 'assistant', content: [{ type: 'text', text: 'filler' }] },
+        { role: 'user', content: [{ type: 'text', text: 'filler 4' }] },
+        { role: 'assistant', content: [{ type: 'text', text: 'filler' }] },
+        // 当前任务
+        { role: 'user', content: [{ type: 'text', text: 'current' }] },
+      ],
+    }) as string
+
+    // tool-call 结构保留，但输入应被截断
+    expect(prompt).toContain('<tool_call id="tc-compact-1" name="Bash">')
+    expect(prompt).toContain('...[truncated,')
+    // 不应包含完整的 1000 个 x
+    expect(prompt).not.toContain('x'.repeat(1000))
+  })
+
+  it('工具输出超过截断阈值时被截断（非 compact 模式）', () => {
+    const hugeOutput = 'Z'.repeat(10000)
+    const prompt = buildPromptFromOptions({
+      ...BASE_OPTIONS,
+      prompt: [
+        { role: 'user', content: [{ type: 'text', text: 'read file' }] },
+        {
+          role: 'assistant',
+          content: [{
+            type: 'tool-call',
+            toolCallId: 'tc-trunc-1',
+            toolName: 'Read',
+            input: { filePath: '/tmp/big.txt' },
+          }],
+        },
+        {
+          role: 'tool',
+          content: [{
+            type: 'tool-result',
+            toolCallId: 'tc-trunc-1',
+            toolName: 'Read',
+            output: hugeOutput,
+          }],
+        },
+        { role: 'user', content: [{ type: 'text', text: 'summarize' }] },
+      ],
+    }) as string
+
+    // 输出应被截断（10000 > 8000 阈值）
+    expect(prompt).toContain('...[truncated, 10000 chars total]')
+    // 不应包含完整的 10000 个 Z
+    expect(prompt).not.toContain(hugeOutput)
+    // 结构保留
+    expect(prompt).toContain('<tool_result id="tc-trunc-1" name="Read">')
+  })
+
+  it('短历史（< RECENT_HISTORY_MSG_COUNT）不触发 compact 截断', () => {
+    const text = 'B'.repeat(2000)
+    const prompt = buildPromptFromOptions({
+      ...BASE_OPTIONS,
+      prompt: [
+        { role: 'user', content: [{ type: 'text', text: 'q1' }] },
+        { role: 'assistant', content: [{ type: 'text', text: `answer-${text}` }] },
+        { role: 'user', content: [{ type: 'text', text: 'q2' }] },
+      ],
+    }) as string
+
+    // 只有 2 条历史消息（< 8），不应触发 compact
+    expect(prompt).toContain(`answer-${text}`)
+    expect(prompt).not.toContain('...[truncated,')
   })
 
   // === 回归测试：最后一条 user 之后的 assistant/tool 消息不应被丢弃 ===

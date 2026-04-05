@@ -1,0 +1,830 @@
+{
+  "_description": "OpenCode session to Qoder CLI session mapping for opencode-qoder-provider",
+  "_generated_at": "2026-04-05T20:02:26.557015",
+  "opencode_sessions": [
+    {
+      "id": "ses_2a2fe6535ffeC1mCznP5ZQQVPM",
+      "title": "Let me first understand the current test structure and identify which tests are E2E tests.",
+      "time_created": 1775381879498,
+      "time_updated": 1775389062995,
+      "message_count": 4,
+      "message_timestamps": [
+        1775381879527,
+        1775381879543,
+        1775389030041,
+        1775389030053
+      ]
+    },
+    {
+      "id": "ses_2a30207b1ffeViNSgJqV3rYldz",
+      "title": "I'll help you update the project models to the latest version. Let me first check the current sta...",
+      "time_created": 1775381641294,
+      "time_updated": 1775381853005,
+      "message_count": 2,
+      "message_timestamps": [
+        1775381641325,
+        1775381641340
+      ]
+    },
+    {
+      "id": "ses_2a3006e20ffeYYfRvNrCEGM28s",
+      "title": "src/qoder-language-model.ts",
+      "time_created": 1775381746144,
+      "time_updated": 1775381765257,
+      "message_count": 2,
+      "message_timestamps": [
+        1775381746737,
+        1775381747493
+      ]
+    },
+    {
+      "id": "ses_2a30066f6ffeOPqpvQN1GERC6N",
+      "title": "`src/qoder-language-model.ts`",
+      "time_created": 1775381747977,
+      "time_updated": 1775381764675,
+      "message_count": 2,
+      "message_timestamps": [
+        1775381748110,
+        1775381748847
+      ]
+    },
+    {
+      "id": "ses_2a300d827ffeq0T6l4MDrXYNnS",
+      "title": "Finding QoderLanguageModel in src",
+      "time_created": 1775381719001,
+      "time_updated": 1775381735040,
+      "message_count": 2,
+      "message_timestamps": [
+        1775381719145,
+        1775381719176
+      ]
+    },
+    {
+      "id": "ses_2b14a81d7ffeIoD6aXGqNN4JC4",
+      "title": "评估 subagent 方案与相关案例",
+      "time_created": 1775142010408,
+      "time_updated": 1775189859959,
+      "message_count": 82,
+      "message_timestamps": [
+        1775142010474,
+        1775142010511,
+        1775142116055,
+        1775142560517,
+        1775142560552,
+        1775142823701,
+        1775142831324,
+        1775144702686,
+        1775144702729,
+        1775144837384,
+        1775144864791,
+        1775144877931,
+        1775144885004,
+        1775144901894,
+        1775144909959,
+        1775145104795,
+        1775145115394,
+        1775145449237,
+        1775145458855,
+        1775145467532,
+        1775145485156,
+        1775146040806,
+        1775146040891,
+        1775146498660,
+        1775146498744,
+        1775146514209,
+        1775146515267,
+        1775146515291,
+        1775146559896,
+        1775146559900,
+        1775146567050,
+        1775146575050,
+        1775146589578,
+        1775146684065,
+        1775146693860,
+        1775146703338,
+        1775146709536,
+        1775146722367,
+        1775146727998,
+        1775146736763,
+        1775146756334,
+        1775146765818,
+        1775146773515,
+        1775146781009,
+        1775146786103,
+        1775146791778,
+        1775146798363,
+        1775146803188,
+        1775146809177,
+        1775146831585,
+        1775146837720,
+        1775146842483,
+        1775146849142,
+        1775146855525,
+        1775146860748,
+        1775146866107,
+        1775146875073,
+        1775146894661,
+        1775146899926,
+        1775146920348,
+        1775146938387,
+        1775146947474,
+        1775146954660,
+        1775146965511,
+        1775146985328,
+        1775147013465,
+        1775147022685,
+        1775147063739,
+        1775147070743,
+        1775147078279,
+        1775147086168,
+        1775178730868,
+        1775178731573,
+        1775181185329,
+        1775181185371,
+        1775181230393,
+        1775181239515,
+        1775181259174,
+        1775181274639,
+        1775189825541,
+        1775189825594,
+        1775189859913
+      ]
+    },
+    {
+      "id": "ses_2b0fc4481ffeaj2iMwqvKUmofo",
+      "title": "quick search (@explorer subagent)",
+      "time_created": 1775147137918,
+      "time_updated": 1775147142807,
+      "message_count": 2,
+      "message_timestamps": [
+        1775147137922,
+        1775147137926
+      ]
+    },
+    {
+      "id": "ses_2b0fc7facffe4Jim9ItyCc5hie",
+      "title": "Launch explorer subagent with quick search prompt",
+      "time_created": 1775147122771,
+      "time_updated": 1775147136291,
+      "message_count": 2,
+      "message_timestamps": [
+        1775147122840,
+        1775147122909
+      ]
+    },
+    {
+      "id": "ses_2b0fc764fffeoZD5lXnkHyKQIm",
+      "title": "Background bash command chain test",
+      "time_created": 1775147125168,
+      "time_updated": 1775147134220,
+      "message_count": 2,
+      "message_timestamps": [
+        1775147125280,
+        1775147125338
+      ]
+    },
+    {
+      "id": "ses_2b0fc7accffeAWg8dANBxb1ZAe",
+      "title": "AskUserQuestion tool usage inquiry",
+      "time_created": 1775147124019,
+      "time_updated": 1775147134060,
+      "message_count": 2,
+      "message_timestamps": [
+        1775147124115,
+        1775147124205
+      ]
+    }
+  ],
+  "qoder_cli_sessions": {
+    "real_conversations": [],
+    "test_sessions": [
+      {
+        "id": "32722e74-1130-457b-9af4-d9618eb417f8",
+        "msg_count": 2,
+        "created_at": 1775381780637
+      },
+      {
+        "id": "59872a58-ff4f-43b7-aa68-50f3343e2f99",
+        "msg_count": 2,
+        "created_at": 1775381779851
+      },
+      {
+        "id": "c35872e1-4c1f-4bf7-9930-fdb52113fdc7",
+        "msg_count": 1,
+        "created_at": null
+      },
+      {
+        "id": "46cf2a6b-68ba-4caf-87cb-45ee4ca3a788",
+        "msg_count": 2,
+        "created_at": 1775381775178
+      },
+      {
+        "id": "5d99befb-050e-4e38-bfab-83ac4e594988",
+        "msg_count": 1,
+        "created_at": null
+      },
+      {
+        "id": "c4b32f1f-d8fe-4cb5-a797-5bb51841f3d3",
+        "msg_count": 2,
+        "created_at": 1775381770119
+      },
+      {
+        "id": "32bd5ee7-6b36-4570-8b80-b7b322a9ddc9",
+        "msg_count": 2,
+        "created_at": 1775381768340
+      },
+      {
+        "id": "acca0694-8842-469a-9cc9-703eb8951b3b",
+        "msg_count": 2,
+        "created_at": 1775381768544
+      },
+      {
+        "id": "1f6b0c3a-1dab-4230-99ee-e80bb21a66de",
+        "msg_count": 3,
+        "created_at": 1775381756410
+      },
+      {
+        "id": "a8a0bb0b-ff9c-49fc-adb5-2c79a0a96c14",
+        "msg_count": 3,
+        "created_at": 1775381755251
+      },
+      {
+        "id": "313e9b50-d920-4d21-957a-b162c8cb5050",
+        "msg_count": 4,
+        "created_at": 1775381735805
+      },
+      {
+        "id": "9e326989-2f1e-41b5-99c6-159c04819410",
+        "msg_count": 3,
+        "created_at": 1775381742836
+      },
+      {
+        "id": "2a13004c-a698-44d9-bdbf-aed2eaa939f4",
+        "msg_count": 3,
+        "created_at": 1775381742638
+      },
+      {
+        "id": "3277028c-4c75-40e5-982c-2cbe721615d4",
+        "msg_count": 2,
+        "created_at": 1775381742303
+      },
+      {
+        "id": "e2740abb-3776-472e-a852-a761048241de",
+        "msg_count": 1,
+        "created_at": null
+      },
+      {
+        "id": "34b4b730-fa74-4c81-af88-957c03e9a8df",
+        "msg_count": 3,
+        "created_at": 1775381734672
+      },
+      {
+        "id": "2d259ccb-71f5-455e-92a4-0cc1a2135edd",
+        "msg_count": 3,
+        "created_at": 1775381725162
+      },
+      {
+        "id": "6f656abf-7544-44da-b071-a0393c22d206",
+        "msg_count": 2,
+        "created_at": 1775381716550
+      },
+      {
+        "id": "a0a7867c-e787-4e1d-96c7-b346679bc5c7",
+        "msg_count": 4,
+        "created_at": 1775146849926
+      },
+      {
+        "id": "42e64b4c-416f-4a36-a105-68d5bcd1642d",
+        "msg_count": 3,
+        "created_at": 1775146856672
+      },
+      {
+        "id": "07913bfd-7dcc-4eb3-935f-c51f9cfd58e1",
+        "msg_count": 2,
+        "created_at": 1775146850366
+      },
+      {
+        "id": "7b785ed4-4c1b-49eb-89c3-e58c2a9b4d71",
+        "msg_count": 3,
+        "created_at": 1775146848903
+      },
+      {
+        "id": "f97297b9-12c8-4d3a-bd06-076393bbf39f",
+        "msg_count": 1,
+        "created_at": null
+      },
+      {
+        "id": "3dc4ebe4-bc23-42ab-99c0-05580a63a22c",
+        "msg_count": 3,
+        "created_at": 1775146840487
+      },
+      {
+        "id": "83894713-91bc-4be4-a23f-5dacc0d61202",
+        "msg_count": 2,
+        "created_at": 1775146829140
+      },
+      {
+        "id": "be477cfd-837f-4fe8-91e7-767ac1f64d9d",
+        "msg_count": 2,
+        "created_at": 1775146714627
+      },
+      {
+        "id": "9c166e1b-a6a4-4a1f-97a9-8e5538c270f2",
+        "msg_count": 3,
+        "created_at": 1775146711151
+      },
+      {
+        "id": "496b2333-8aba-4fe7-b0a2-424a3c838969",
+        "msg_count": 1,
+        "created_at": null
+      },
+      {
+        "id": "8787328f-6ee5-470e-b2b1-d0e827783b5f",
+        "msg_count": 3,
+        "created_at": 1775146707171
+      },
+      {
+        "id": "705d4fdd-041a-4d4e-bc3b-1ac54e75aedc",
+        "msg_count": 3,
+        "created_at": 1775146699384
+      }
+    ]
+  },
+  "session_mapping_samples": [
+    {
+      "opencode_session_id": "ses_2a30207b1ffeViNSgJqV3rYldz",
+      "opencode_title": "I'll help you update the project models to the latest version. Let me first check the current sta...",
+      "qoder_sessions": [
+        {
+          "qoder_session_id": "32722e74-1130-457b-9af4-d9618eb417f8",
+          "qoder_created_at": 1775381780637,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "2a13004c-a698-44d9-bdbf-aed2eaa939f4",
+          "qoder_created_at": 1775381742638,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "9e326989-2f1e-41b5-99c6-159c04819410",
+          "qoder_created_at": 1775381742836,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "32bd5ee7-6b36-4570-8b80-b7b322a9ddc9",
+          "qoder_created_at": 1775381768340,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "313e9b50-d920-4d21-957a-b162c8cb5050",
+          "qoder_created_at": 1775381735805,
+          "qoder_msg_count": 4
+        },
+        {
+          "qoder_session_id": "c4b32f1f-d8fe-4cb5-a797-5bb51841f3d3",
+          "qoder_created_at": 1775381770119,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "acca0694-8842-469a-9cc9-703eb8951b3b",
+          "qoder_created_at": 1775381768544,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "3277028c-4c75-40e5-982c-2cbe721615d4",
+          "qoder_created_at": 1775381742303,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "2d259ccb-71f5-455e-92a4-0cc1a2135edd",
+          "qoder_created_at": 1775381725162,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "34b4b730-fa74-4c81-af88-957c03e9a8df",
+          "qoder_created_at": 1775381734672,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "1f6b0c3a-1dab-4230-99ee-e80bb21a66de",
+          "qoder_created_at": 1775381756410,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "46cf2a6b-68ba-4caf-87cb-45ee4ca3a788",
+          "qoder_created_at": 1775381775178,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "59872a58-ff4f-43b7-aa68-50f3343e2f99",
+          "qoder_created_at": 1775381779851,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "6f656abf-7544-44da-b071-a0393c22d206",
+          "qoder_created_at": 1775381716550,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "a8a0bb0b-ff9c-49fc-adb5-2c79a0a96c14",
+          "qoder_created_at": 1775381755251,
+          "qoder_msg_count": 3
+        }
+      ]
+    },
+    {
+      "opencode_session_id": "ses_2a3006e20ffeYYfRvNrCEGM28s",
+      "opencode_title": "src/qoder-language-model.ts",
+      "qoder_sessions": [
+        {
+          "qoder_session_id": "2a13004c-a698-44d9-bdbf-aed2eaa939f4",
+          "qoder_created_at": 1775381742638,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "9e326989-2f1e-41b5-99c6-159c04819410",
+          "qoder_created_at": 1775381742836,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "32bd5ee7-6b36-4570-8b80-b7b322a9ddc9",
+          "qoder_created_at": 1775381768340,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "c4b32f1f-d8fe-4cb5-a797-5bb51841f3d3",
+          "qoder_created_at": 1775381770119,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "acca0694-8842-469a-9cc9-703eb8951b3b",
+          "qoder_created_at": 1775381768544,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "3277028c-4c75-40e5-982c-2cbe721615d4",
+          "qoder_created_at": 1775381742303,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "1f6b0c3a-1dab-4230-99ee-e80bb21a66de",
+          "qoder_created_at": 1775381756410,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "a8a0bb0b-ff9c-49fc-adb5-2c79a0a96c14",
+          "qoder_created_at": 1775381755251,
+          "qoder_msg_count": 3
+        }
+      ]
+    },
+    {
+      "opencode_session_id": "ses_2a30066f6ffeOPqpvQN1GERC6N",
+      "opencode_title": "`src/qoder-language-model.ts`",
+      "qoder_sessions": [
+        {
+          "qoder_session_id": "32bd5ee7-6b36-4570-8b80-b7b322a9ddc9",
+          "qoder_created_at": 1775381768340,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "acca0694-8842-469a-9cc9-703eb8951b3b",
+          "qoder_created_at": 1775381768544,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "1f6b0c3a-1dab-4230-99ee-e80bb21a66de",
+          "qoder_created_at": 1775381756410,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "a8a0bb0b-ff9c-49fc-adb5-2c79a0a96c14",
+          "qoder_created_at": 1775381755251,
+          "qoder_msg_count": 3
+        }
+      ]
+    },
+    {
+      "opencode_session_id": "ses_2a300d827ffeq0T6l4MDrXYNnS",
+      "opencode_title": "Finding QoderLanguageModel in src",
+      "qoder_sessions": [
+        {
+          "qoder_session_id": "313e9b50-d920-4d21-957a-b162c8cb5050",
+          "qoder_created_at": 1775381735805,
+          "qoder_msg_count": 4
+        },
+        {
+          "qoder_session_id": "2d259ccb-71f5-455e-92a4-0cc1a2135edd",
+          "qoder_created_at": 1775381725162,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "34b4b730-fa74-4c81-af88-957c03e9a8df",
+          "qoder_created_at": 1775381734672,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "6f656abf-7544-44da-b071-a0393c22d206",
+          "qoder_created_at": 1775381716550,
+          "qoder_msg_count": 2
+        }
+      ]
+    },
+    {
+      "opencode_session_id": "ses_2b14a81d7ffeIoD6aXGqNN4JC4",
+      "opencode_title": "评估 subagent 方案与相关案例",
+      "qoder_sessions": [
+        {
+          "qoder_session_id": "d1c0ebf1-997d-41cc-b138-c545d37baa97",
+          "qoder_created_at": 1775144884749,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "11549ed8-ce0f-45d0-98bf-e5cadc06ce3d",
+          "qoder_created_at": 1775146671484,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "8787328f-6ee5-470e-b2b1-d0e827783b5f",
+          "qoder_created_at": 1775146707171,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "453ccb86-fe0d-4566-9858-47e2840ee532",
+          "qoder_created_at": 1775146655330,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "31a9d666-d819-4daf-8577-b7932776027f",
+          "qoder_created_at": 1775145539866,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "c5302901-9fc0-4181-a327-9da67a556daf",
+          "qoder_created_at": 1775144821872,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "3dc4ebe4-bc23-42ab-99c0-05580a63a22c",
+          "qoder_created_at": 1775146840487,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "514e9da9-0a32-4c68-a87b-33e2cda3472f",
+          "qoder_created_at": 1775144904723,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "be477cfd-837f-4fe8-91e7-767ac1f64d9d",
+          "qoder_created_at": 1775146714627,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "0e22a035-7e10-4a96-a315-ddf6e125985d",
+          "qoder_created_at": 1775145702407,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "1e139f03-89b4-455b-83ea-fc165d4a9753",
+          "qoder_created_at": 1775144895853,
+          "qoder_msg_count": 16
+        },
+        {
+          "qoder_session_id": "8900334c-ed5e-407e-9792-14c44623c929",
+          "qoder_created_at": 1775146679677,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "385089d1-5caf-48b7-92ad-59f985fb78c5",
+          "qoder_created_at": 1775144886733,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "cdc48af4-c6b6-41ec-8781-26edae476b04",
+          "qoder_created_at": 1775145573702,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "18f5ab40-21df-4150-b420-485b13ea2671",
+          "qoder_created_at": 1775144822015,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "487bb307-6916-45a9-8eec-7debf658e5d3",
+          "qoder_created_at": 1775146690200,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "825e7312-52d2-4ab8-b445-2b62a6e9c980",
+          "qoder_created_at": 1775145666836,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "6974bb58-f6da-4747-9618-cb94573b9cab",
+          "qoder_created_at": 1775144890852,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "fda53895-b2b8-48fa-ba0d-f806d027f44b",
+          "qoder_created_at": 1775144847578,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "42e64b4c-416f-4a36-a105-68d5bcd1642d",
+          "qoder_created_at": 1775146856672,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "a0a7867c-e787-4e1d-96c7-b346679bc5c7",
+          "qoder_created_at": 1775146849926,
+          "qoder_msg_count": 4
+        },
+        {
+          "qoder_session_id": "bfcca41c-45fc-4611-8dae-8dcd6be1c5bb",
+          "qoder_created_at": 1775145607612,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "e759cd4a-9617-484e-a440-573889f66235",
+          "qoder_created_at": 1775144892689,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "7b785ed4-4c1b-49eb-89c3-e58c2a9b4d71",
+          "qoder_created_at": 1775146848903,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "585cc009-df81-49ad-a3eb-f3216e54a786",
+          "qoder_created_at": 1775144841690,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "f39f0f27-3782-4ce0-abbd-9560fdb10b3e",
+          "qoder_created_at": 1775144829570,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "9c166e1b-a6a4-4a1f-97a9-8e5538c270f2",
+          "qoder_created_at": 1775146711151,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "07913bfd-7dcc-4eb3-935f-c51f9cfd58e1",
+          "qoder_created_at": 1775146850366,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "ff16ca22-bfea-40d4-81f5-6188f6d5884c",
+          "qoder_created_at": 1775144895509,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "531b9814-3e6b-41b0-9c34-b6ef472658b3",
+          "qoder_created_at": 1775144823102,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "71e411a3-e33a-42b0-bb4d-3b827940f1fd",
+          "qoder_created_at": 1775145727816,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "e2537809-5470-44c8-a5e6-6936bec65035",
+          "qoder_created_at": 1775144904341,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "d415a994-4610-4ef9-908d-eb7b9df6e9e0",
+          "qoder_created_at": 1775145557445,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "4f79228f-20a0-47cc-8b62-af01c4234007",
+          "qoder_created_at": 1775145743418,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "78ae5f1f-4ed9-4e9c-acaf-98a6d320ee23",
+          "qoder_created_at": 1775145542792,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "ff624a19-682e-4d53-900a-3b3db3411e76",
+          "qoder_created_at": 1775145697784,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "83894713-91bc-4be4-a23f-5dacc0d61202",
+          "qoder_created_at": 1775146829140,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "a576e400-3bf8-4ac0-9359-637cd0e3ec99",
+          "qoder_created_at": 1775145603437,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "71bf4ae4-e224-451b-974d-7f21727aa92d",
+          "qoder_created_at": 1775145522329,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "7ed0abca-e473-4e03-ae67-3659aa619d26",
+          "qoder_created_at": 1775145633198,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "a757cf15-82d9-43c5-bf06-7e72576a637f",
+          "qoder_created_at": 1775144909684,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "c57d2df3-3ac3-4a5e-8e1a-9f85cfb4dfe7",
+          "qoder_created_at": 1775144885171,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "a63b2c8c-1d09-441f-a043-c636ea858b80",
+          "qoder_created_at": 1775145764720,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "83342de9-3218-4db4-ba2a-c8d5873c9eb5",
+          "qoder_created_at": 1775144938356,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "8c439f5f-a78f-4b4b-8c18-7fd0cc909923",
+          "qoder_created_at": 1775144824126,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "20fa8f7a-9b67-42ac-9258-9b30dfbd7f4e",
+          "qoder_created_at": 1775144827666,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "473227a3-0ad2-4e6b-97e1-994e345cfce8",
+          "qoder_created_at": 1775144832203,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "705d4fdd-041a-4d4e-bc3b-1ac54e75aedc",
+          "qoder_created_at": 1775146699384,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "34423177-3e75-4db8-9c7d-751fe3e7b325",
+          "qoder_created_at": 1775144913249,
+          "qoder_msg_count": 3
+        },
+        {
+          "qoder_session_id": "6f4f5f12-086b-422c-906a-527b6bb8ebac",
+          "qoder_created_at": 1775145522252,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "b3157718-e1d8-4900-a1af-246d75833767",
+          "qoder_created_at": 1775144920349,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "70c65079-9572-4105-8c84-26cea84c9986",
+          "qoder_created_at": 1775144848997,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "4f49946a-82f9-45a9-b4e8-f5070d346485",
+          "qoder_created_at": 1775144866273,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "4203e52a-db20-4c0f-8169-7ef54070bc86",
+          "qoder_created_at": 1775144884909,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "5a62ced5-2da3-4789-8bc9-5a9541a5ed21",
+          "qoder_created_at": 1775145648583,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "a93a918b-13c6-4fb5-8f6a-e314d4bbfe49",
+          "qoder_created_at": 1775144832119,
+          "qoder_msg_count": 2
+        },
+        {
+          "qoder_session_id": "ea80a0bf-f8a8-4d83-8c66-c88714269fb4",
+          "qoder_created_at": 1775144828217,
+          "qoder_msg_count": 6
+        },
+        {
+          "qoder_session_id": "2ec1929e-34fe-4f34-83d1-db4f42cfb6d6",
+          "qoder_created_at": 1775144890239,
+          "qoder_msg_count": 6
+        }
+      ]
+    }
+  ]
+}

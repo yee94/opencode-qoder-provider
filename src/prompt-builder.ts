@@ -8,6 +8,21 @@ const DEFAULT_CONTEXT_LIMIT = 180000
 const APPROX_CHARS_PER_TOKEN = 4
 const PROMPT_CONTEXT_BUDGET_RATIO = 0.7
 
+// ── 上下文优化：减少历史注入的 token 损耗 ──────────────────────────────────────
+// 工具输出截断阈值（chars）：超过此长度的工具结果会被截断，避免单条工具输出占用过多上下文
+const TOOL_OUTPUT_TRUNCATE_THRESHOLD = 8000
+// 历史压缩：早期轮次（距当前 > RECENT_HISTORY_MSG_COUNT 条消息）使用紧凑序列化
+const RECENT_HISTORY_MSG_COUNT = 8
+const COMPACT_TEXT_MAX_CHARS = 500
+const COMPACT_TOOL_INPUT_MAX_CHARS = 200
+const COMPACT_TOOL_OUTPUT_MAX_CHARS = 500
+
+/** 超出 maxChars 的文本截断，附加原始长度提示 */
+function truncateText(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text
+  return text.slice(0, maxChars) + `\n...[truncated, ${text.length} chars total]`
+}
+
 /**
  * 从 opencode 传入的 LanguageModelV2CallOptions 中构造 Qoder query 的 prompt。
  *
@@ -82,11 +97,16 @@ function hasImageContent(prompt: LanguageModelV2Prompt): boolean {
   return false
 }
 
-/** 序列化工具输出为字符串 */
-function serializeToolOutput(output: unknown): string {
+/** 序列化工具输出为字符串，超出 maxChars 则截断 */
+function serializeToolOutput(output: unknown, maxChars: number = TOOL_OUTPUT_TRUNCATE_THRESHOLD): string {
   if (output == null) return ''
-  if (typeof output === 'string') return output
-  return serializeStructuredToolOutput(output)
+  let result: string
+  if (typeof output === 'string') {
+    result = output
+  } else {
+    result = serializeStructuredToolOutput(output)
+  }
+  return truncateText(result, maxChars)
 }
 
 function serializeStructuredToolOutput(output: unknown): string {
@@ -154,8 +174,13 @@ function trimPromptToBudget(prompt: LanguageModelV2Prompt): LanguageModelV2Promp
  * - user 消息直接输出文本内容
  * - assistant 消息用 <assistant> 标签，含工具调用时附加 <tool_call> 子块
  * - tool 消息（工具结果）用 <tool_result> 标签，含调用 ID 和工具名
+ *
+ * compact 模式（用于早期历史消息）：截断 assistant 文本、tool-call 输入和 tool-result 输出，
+ * 保留结构信息但减少 token 占用。user 和 system 始终保持完整。
  */
-function serializeMessage(message: LanguageModelV2Message): string {
+function serializeMessage(message: LanguageModelV2Message, options?: { compact?: boolean }): string {
+  const compact = options?.compact ?? false
+
   switch (message.role) {
     case 'system': {
       if (typeof message.content === 'string') {
@@ -187,13 +212,14 @@ function serializeMessage(message: LanguageModelV2Message): string {
       const parts: string[] = []
       for (const part of message.content) {
         if (part.type === 'text' && part.text) {
-          parts.push(part.text)
+          parts.push(compact ? truncateText(part.text, COMPACT_TEXT_MAX_CHARS) : part.text)
         } else if (part.type === 'tool-call') {
           const inputStr = typeof part.input === 'string'
             ? part.input
             : JSON.stringify(part.input ?? {})
+          const effectiveInput = compact ? truncateText(inputStr, COMPACT_TOOL_INPUT_MAX_CHARS) : inputStr
           parts.push(
-            `<tool_call id="${part.toolCallId}" name="${part.toolName}">\n${inputStr}\n</tool_call>`,
+            `<tool_call id="${part.toolCallId}" name="${part.toolName}">\n${effectiveInput}\n</tool_call>`,
           )
         }
       }
@@ -206,7 +232,8 @@ function serializeMessage(message: LanguageModelV2Message): string {
       const parts: string[] = []
       for (const part of message.content) {
         if (part.type === 'tool-result') {
-          const outputStr = serializeToolOutput(part.output)
+          const maxChars = compact ? COMPACT_TOOL_OUTPUT_MAX_CHARS : TOOL_OUTPUT_TRUNCATE_THRESHOLD
+          const outputStr = serializeToolOutput(part.output, maxChars)
           parts.push(
             `<tool_result id="${part.toolCallId}" name="${part.toolName}">\n${outputStr}\n</tool_result>`,
           )
@@ -235,8 +262,11 @@ export function buildStringPrompt(
 
   if (lastUserIdx === -1) return 'Hello'
 
+  // 历史压缩：早期消息用紧凑序列化，最近 RECENT_HISTORY_MSG_COUNT 条保持完整
+  const recentStartIdx = Math.max(0, lastUserIdx - RECENT_HISTORY_MSG_COUNT)
+
   // 将最后一条 user 消息之前的历史序列化
-  const historyParts = serializePromptRange(effectivePrompt, 0, lastUserIdx)
+  const historyParts = serializePromptRange(effectivePrompt, 0, lastUserIdx, { recentStartIdx })
 
   // 当前任务：最后一条 user 消息
   const currentMsg = serializeMessage(effectivePrompt[lastUserIdx])
@@ -279,8 +309,11 @@ async function* buildAsyncIterablePrompt(
   }
   if (lastUserIdx === -1) return
 
+  // 历史压缩：早期消息用紧凑序列化，最近 RECENT_HISTORY_MSG_COUNT 条保持完整
+  const recentStartIdx = Math.max(0, lastUserIdx - RECENT_HISTORY_MSG_COUNT)
+
   // 构建历史前缀（最后一条 user 之前的消息）
-  const historyParts = serializePromptRange(effectivePrompt, 0, lastUserIdx)
+  const historyParts = serializePromptRange(effectivePrompt, 0, lastUserIdx, { recentStartIdx })
 
   // 最后一条 user 之后可能还有 assistant/tool 消息（如 tool-call/tool-result），
   // 它们属于已发生的后续上下文，需按原始顺序保留，不能丢弃。
@@ -435,10 +468,13 @@ function serializePromptRange(
   prompt: LanguageModelV2Prompt,
   start: number,
   end: number,
+  options?: { recentStartIdx?: number },
 ): string[] {
   const parts: string[] = []
+  const recentStart = options?.recentStartIdx ?? end
   for (let i = start; i < end; i++) {
-    const serialized = serializeMessage(prompt[i])
+    const compact = i < recentStart
+    const serialized = serializeMessage(prompt[i], { compact })
     if (serialized) parts.push(serialized)
   }
   return parts

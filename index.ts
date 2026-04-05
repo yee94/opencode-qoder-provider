@@ -15,7 +15,7 @@ export const QoderProviderPlugin: Plugin = async () => {
       config.provider = config.provider ?? {}
       const existing = config.provider.qoder ?? {}
 
-      // 将 QODER_MODELS 转换为 opencode provider models 格式（去掉 cost 字段，opencode 不识别）
+      // 将 QODER_MODELS 转换为 opencode provider models 格式
       const builtinModels: Record<string, object> = {}
       for (const [key, m] of Object.entries(QODER_MODELS)) {
         builtinModels[key] = {
@@ -24,6 +24,9 @@ export const QoderProviderPlugin: Plugin = async () => {
           reasoning: m.reasoning,
           temperature: m.temperature,
           tool_call: m.tool_call,
+          // cost 配置用于 opencode 的费用追踪（虽然目前有 bug，但配置是正确的）
+          cost: m.cost,
+          // limit 配置用于 opencode 的上下文管理和自动压缩
           limit: m.limit,
           // opencode 通过 modalities.input 判断是否支持图片输入（attachment 字段不参与此判断）
           modalities: {
