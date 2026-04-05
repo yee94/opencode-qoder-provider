@@ -58,19 +58,19 @@ opencode -m qoder/auto
 
 ### Available Models
 
-| Model ID | Name | Context | Output | Attachment | Reasoning |
-|----------|------|---------|--------|-----------|-----------|
-| `lite` | Lite — **free** | 180K | 32K | ✗ | ✗ |
-| `auto` | Auto (1.0x) | 180K | 32K | ✓ | ✗ |
-| `efficient` | Efficient (0.3x) | 180K | 32K | ✓ | ✗ |
-| `performance` | Performance (1.1x) | 180K | 32K | ✓ | ✗ |
-| `ultimate` | Ultimate (1.6x) | 180K | 32K | ✓ | ✓ |
-| `q35model_preview` | Qwen3.6-Plus-DogFooding (0x) | 180K | 32K | ✓ | ✗ |
-| `qmodel` | Qwen3.6-Plus (0.2x) | 180K | 32K | ✓ | ✗ |
-| `q35model` | Qwen3.5-Plus (0.2x) | 180K | 32K | ✓ | ✗ |
-| `gmodel` | GLM-5 (0.5x) | 180K | 32K | ✓ | ✗ |
-| `kmodel` | Kimi-K2.5 (0.3x) | 180K | 32K | ✓ | ✗ |
-| `mmodel` | MiniMax-M2.7 (0.2x) | 180K | 32K | ✓ | ✗ |
+| Model ID | Name | Context | Input | Output | Attachment | Reasoning |
+|----------|------|---------|-------|--------|-----------|-----------|
+| `lite` | Lite — **free** | 200K | 128K | 64K | ✗ | ✗ |
+| `auto` | Auto (1.0x) | 200K | 128K | 64K | ✓ | ✗ |
+| `efficient` | Efficient (0.3x) | 200K | 128K | 64K | ✓ | ✗ |
+| `performance` | Performance (1.1x) | 200K | 128K | 64K | ✓ | ✗ |
+| `ultimate` | Ultimate (1.6x) | 200K | 128K | 64K | ✓ | ✓ |
+| `q35model_preview` | Qwen3.6-Plus-DogFooding (0x) | 200K | 128K | 64K | ✓ | ✗ |
+| `qmodel` | Qwen3.6-Plus (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
+| `q35model` | Qwen3.5-Plus (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
+| `gmodel` | GLM-5 (0.5x) | 200K | 128K | 64K | ✓ | ✗ |
+| `kmodel` | Kimi-K2.5 (0.3x) | 200K | 128K | 64K | ✓ | ✗ |
+| `mmodel` | MiniMax-M2.7 (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
 
 ---
 
@@ -167,19 +167,19 @@ opencode -m qoder/auto
 
 ### 可用模型
 
-| 模型 ID | 名称 | 上下文 | 输出 | 附件 | 推理 |
-|---------|------|-------|------|-----|-----|
-| `lite` | Lite — **免费** | 180K | 32K | ✗ | ✗ |
-| `auto` | Auto (1.0x) | 180K | 32K | ✓ | ✗ |
-| `efficient` | Efficient (0.3x) | 180K | 32K | ✓ | ✗ |
-| `performance` | Performance (1.1x) | 180K | 32K | ✓ | ✗ |
-| `ultimate` | Ultimate (1.6x) | 180K | 32K | ✓ | ✓ |
-| `q35model_preview` | Qwen3.6-Plus-DogFooding (0x) | 180K | 32K | ✓ | ✗ |
-| `qmodel` | Qwen3.6-Plus (0.2x) | 180K | 32K | ✓ | ✗ |
-| `q35model` | Qwen3.5-Plus (0.2x) | 180K | 32K | ✓ | ✗ |
-| `gmodel` | GLM-5 (0.5x) | 180K | 32K | ✓ | ✗ |
-| `kmodel` | Kimi-K2.5 (0.3x) | 180K | 32K | ✓ | ✗ |
-| `mmodel` | MiniMax-M2.7 (0.2x) | 180K | 32K | ✓ | ✗ |
+| 模型 ID | 名称 | 上下文 | 输入 | 输出 | 附件 | 推理 |
+|---------|------|-------|------|------|-----|-----|
+| `lite` | Lite — **免费** | 200K | 128K | 64K | ✗ | ✗ |
+| `auto` | Auto (1.0x) | 200K | 128K | 64K | ✓ | ✗ |
+| `efficient` | Efficient (0.3x) | 200K | 128K | 64K | ✓ | ✗ |
+| `performance` | Performance (1.1x) | 200K | 128K | 64K | ✓ | ✗ |
+| `ultimate` | Ultimate (1.6x) | 200K | 128K | 64K | ✓ | ✓ |
+| `q35model_preview` | Qwen3.6-Plus-DogFooding (0x) | 200K | 128K | 64K | ✓ | ✗ |
+| `qmodel` | Qwen3.6-Plus (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
+| `q35model` | Qwen3.5-Plus (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
+| `gmodel` | GLM-5 (0.5x) | 200K | 128K | 64K | ✓ | ✗ |
+| `kmodel` | Kimi-K2.5 (0.3x) | 200K | 128K | 64K | ✓ | ✗ |
+| `mmodel` | MiniMax-M2.7 (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
 
 ---
 

@@ -9,9 +9,15 @@ opencode-qoder-plugin/
 ├── index.ts                     # Plugin entry — config hook + auth hook
 ├── provider.ts                  # Exports createQoderProvider() (opencode npm loader entry)
 ├── src/
-│   ├── models.ts                # 10 built-in model definitions (injected by config hook)
+│   ├── models.ts                # 11 built-in model definitions (injected by config hook)
 │   ├── qoder-language-model.ts  # LanguageModelV2 implementation (doGenerate + doStream)
+│   │   ├── Session management (fingerprint + resume)
+│   │   ├── Client caching (signature-based reuse)
+│   │   ├── Tool bridge (normalizeToolName + normalizeToolInput)
+│   │   └── MCP bridge integration
 │   ├── prompt-builder.ts        # AI SDK CallOptions → Qoder prompt / multimodal builder
+│   ├── mcp-bridge.ts            # Converts opencode config.mcp → Qoder SDK mcpServers format
+│   ├── agent-bridge.ts          # Detects available agent types from oh-my-opencode-slim plugins
 │   └── vendor/
 │       ├── qoder-agent-sdk.mjs  # Vendored Qoder Agent SDK — DO NOT modify
 │       └── qoder-agent-sdk.d.ts # SDK type declarations — DO NOT modify
@@ -27,21 +33,60 @@ opencode-qoder-plugin/
 ## Key Design Decisions
 
 - **Plugin, not provider config** — `index.ts` uses the `config` hook to inject `provider.qoder` automatically. Users only need `"plugin": ["opencode-qoder-plugin"]` in their `opencode.json`.
-- **Auth hook** — checks `~/.qoder/.auth/user` for login state. If absent, surfaces a prompt telling users to run `qoder login`.
+- **Dual auth paths** — checks `~/.qoderwork/.auth/user` first (QoderWork), then `~/.qoder/.auth/user` (Qoder CLI). If absent, surfaces a prompt telling users to run `qoder login`.
 - **Vendored SDK** — `src/vendor/qoder-agent-sdk.mjs` is a bundled copy of `@ali/qoder-agent-sdk` (internal registry). Do not replace it without testing the full streaming pipeline.
 - **Model merging** — builtin models from `src/models.ts` are injected first; any `provider.qoder.models` overrides in the user's `opencode.json` take precedence.
+- **opencode主导工具调用** — opencode controls tool execution lifecycle; Qoder CLI handles only built-in tools (Read/Write/Bash/etc). Plugin bridges tool names and input formats between the two frameworks.
+- **Session复用** — SHA256 fingerprint of system prompt + first user message maps to Qoder session ID. Subsequent calls with same fingerprint resume the existing session, avoiding full prompt rebuild.
+- **Client缓存** — `QoderAgentSDKClient` instances are cached by permission signature. Matching signature → reuse; mismatch → create new client + connect().
 
 ## How the Streaming Pipeline Works
 
 ```
 opencode → QoderLanguageModel.doStream()
+  → buildSessionPlan()         # fingerprint → lookup/resume or new session
   → buildPromptFromOptions()   # text or multimodal (base64 image)
   → resolveQoderCLI()          # finds latest ~/.qoder/bin/qodercli/qodercli-<version>
+  → getOrCreateClient()        # cache hit or new QoderAgentSDKClient + connect()
   → SDK query()                # streams SDKMessage events
       ├─ stream_event path     # incremental text / tool-input deltas (preferred)
       └─ assistant path        # full-block fallback
+  → normalize tool names/inputs
   → ReadableStream<V2StreamPart>
 ```
+
+### Tool Bridging
+
+When Qoder CLI emits a `tool_use` block:
+
+1. **normalizeToolName** — maps CLI names to opencode function names:
+   - `Read` → `read`, `Write` → `write`, `Edit` → `edit`, `Bash` → `bash`
+   - `AskUserQuestion` → `question`, `Agent` → `task`
+   - `mcp__server__tool` → `server_tool`
+
+2. **isProviderExecuted** — determines who runs the tool:
+   - If tool name exists in opencode's `functionToolNames` → opencode executes it
+   - Otherwise → Qoder CLI handles it internally
+
+3. **normalizeToolInput** — converts camelCase↔snake_case:
+   - `read`/`write`: `file_path` → `filePath`
+   - `edit`: `old_string` → `oldString`, `new_string` → `newString`
+   - `question`: `multiSelect` → `multiple`
+   - `skill`: `skill` → `name`
+   - `task`: maps `subagent_type` to internal identifiers
+
+### Session Management
+
+- **Fingerprint**: SHA256(system prompt + first user message) → 16-char hex
+- **Session map**: `~/.qoder/.opencode-session-map.json` stores fingerprint → sessionId
+- **Resume**: Matching fingerprint → sends only the last user message (not full history)
+- **Fallback**: Fingerprint mismatch or session expired → creates new session
+
+### Architecture Note: QoderWork vs This Plugin
+
+QoderWork 主对话使用持久 `QoderAgentSDKClient` + `connect()` + 会话复用，工具调用在持久流内结构化处理。
+本插件当前通过单次 `query()` 调用，依赖 session fingerprint 复用和 prompt 重建实现多轮。
+这是有意为之的设计：opencode 主导工具调用生命周期，Qoder 专注生成。
 
 ## Development
 
@@ -84,19 +129,19 @@ After editing `src/models.ts`, also update the model table in `README.md` (both 
 
 ### Current model snapshot (from `~/.qoder/.auth/models` → `assistant`)
 
-| Model ID | Name | Context | Output | Attachment (`is_vl`) | Reasoning (`is_reasoning`) |
-|----------|------|---------|--------|----------------------|---------------------------|
-| `auto` | Auto (1.0x) | 180K | 32768 | ✓ | ✗ |
-| `ultimate` | Ultimate (1.6x) | 180K | 32768 | ✓ | ✓ |
-| `performance` | Performance (1.1x) | 180K | 32768 | ✓ | ✗ |
-| `efficient` | Efficient (0.3x) | 180K | 32768 | ✓ | ✗ |
-| `lite` | Lite (free) | 180K | 32768 | ✗ | ✗ |
-| `q35model_preview` | Qwen3.6-Plus-DogFooding (0x) | 180K | 32768 | ✓ | ✗ |
-| `qmodel` | Qwen3.6-Plus (0.2x) | 180K | 32768 | ✓ | ✗ |
-| `q35model` | Qwen3.5-Plus (0.2x) | 180K | 32768 | ✓ | ✗ |
-| `gmodel` | GLM-5 (0.5x) | 180K | 32768 | ✓ | ✗ |
-| `kmodel` | Kimi-K2.5 (0.3x) | 180K | 32768 | ✓ | ✗ |
-| `mmodel` | MiniMax-M2.7 (0.2x) | 180K | 32768 | ✓ | ✗ |
+| Model ID | Name | Context | Input | Output | Attachment (`is_vl`) | Reasoning (`is_reasoning`) |
+|----------|------|---------|-------|--------|----------------------|---------------------------|
+| `auto` | Auto (1.0x) | 200K | 128K | 64K | ✓ | ✗ |
+| `ultimate` | Ultimate (1.6x) | 200K | 128K | 64K | ✓ | ✓ |
+| `performance` | Performance (1.1x) | 200K | 128K | 64K | ✓ | ✗ |
+| `efficient` | Efficient (0.3x) | 200K | 128K | 64K | ✓ | ✗ |
+| `lite` | Lite (free) | 200K | 128K | 64K | ✗ | ✗ |
+| `q35model_preview` | Qwen3.6-Plus-DogFooding (0x) | 200K | 128K | 64K | ✓ | ✗ |
+| `qmodel` | Qwen3.6-Plus (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
+| `q35model` | Qwen3.5-Plus (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
+| `gmodel` | GLM-5 (0.5x) | 200K | 128K | 64K | ✓ | ✗ |
+| `kmodel` | Kimi-K2.5 (0.3x) | 200K | 128K | 64K | ✓ | ✗ |
+| `mmodel` | MiniMax-M2.7 (0.2x) | 200K | 128K | 64K | ✓ | ✗ |
 
 ---
 
