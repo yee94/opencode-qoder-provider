@@ -145,6 +145,57 @@ After editing `src/models.ts`, also update the model table in `README.md` (both 
 
 ---
 
+## Reverse Engineering Documentation Policy
+
+All reverse engineering work (Frida hooks, binary analysis, HTTP traffic capture, JWT/signature analysis, etc.) MUST be documented in the `docs/` directory.
+
+**When to document:**
+- Any breakthrough or key finding (e.g., JWT structure, signature algorithm, API endpoints)
+- Discovery of authentication mechanisms or encryption methods
+- Binary analysis results (symbol tables, package paths, function locations)
+- HTTP request/response format analysis
+- Failed attempts with root cause analysis (proves what doesn't work)
+
+**Documentation requirements:**
+- Write conclusions immediately — don't wait until the task is complete
+- Include technical details: code snippets, request/response samples, hex dumps
+- Record failed experiments and why they failed (saves time for future work)
+- Use markdown files with descriptive names in `docs/` directory
+- Cross-reference related documents when findings build on previous work
+
+**Current doc structure:**
+```
+docs/
+├── cosy-jwt-analysis.md              # JWT structure and payload analysis
+├── cosy-jwt-signature-algorithm.md   # ✅ COMPLETE: Full JWT sig algorithm (MD5)
+│                                   #   s1=base64_payload, s2=machineToken (key field), s3=timestamp, s4=body_hash, s5=url_path
+├── http-signature-headers.md         # ✅ COMPLETE: HTTP Signature/Appcode headers
+│                                   #   MD5("cosy&d2FyLCB3YXIgbmV2ZXIgY2hhbmdlcw==&<Date>")
+├── rsa-key-discovery.md              # RSA public key (1024-bit PKCS1v15) and info field source
+│                                   #   info field from userInfo+0x80 (AES-decrypted encrypt_user_info)
+├── custom-base64-encoding.md         # Custom base64 alphabet reference
+├── qodercli-auth-decryption.md       # Auth file AES-128-CBC decryption
+├── qoder-request-encryption-reverse-engineering.md  # Request body encoding
+├── reverse-engineering-jwt-signature.md # JWT sig reverse engineering (updated with complete破解)
+├── standalone-api-call.md            # ✅ COMPLETE: Direct API call with cracked auth
+├── frida-analysis.md                 # Frida hooks + DYLD injection (Path F ✅)
+├── cosy-key-header-analysis.md       # ⚠️ OBSOLETE: Contains correction notice — Cosy-Key = machineToken, not zap.log
+├── info-field-encoding-chain.md      # ⚠️ OBSOLETE: Contains correction notice — info is AES-decrypted, not RSA
+└── re-engineering/                   # Consolidated artifacts for handoff
+    ├── README.md                     # Index of all RE artifacts
+    ├── frida-scripts/                # 2 useful scripts (v5 hooks)
+    ├── disassembly/                  # 6 key function disassembly files
+    └── captured-data/                # Minimal request captures
+```
+
+**Key breakthroughs:**
+- **COSY JWT signature**: `MD5(s1\ns2\ns3\ns4\ns5)` — fully cracked, Node.js implementation ready
+- **DYLD_INSERT_LIBRARIES injection**: Replaces argv placeholder before Go runtime, works for all CLI features including multimodal
+- **machineToken source**: `key` field from `~/.qoder/shared_client/cache/user` (172 chars), NOT cosy_machinetoken
+- **Cosy-Key header**: Equals machineToken (same value from GenerateAuthToken return x2,x3)
+- **info field**: From userInfo struct offset 0x80, AES-decrypted from encrypt_user_info (not RSA-encrypted)
+- **Custom base64**: Alphabet `_doRTgHZBKcGVjlvpC,@aFSx#DPuNJme&i*MzLOEn)sUrthbf%Y^w.(kIQyXqWA!` with `$` padding
+
 ## What NOT to Do
 
 - Do not modify `src/vendor/` files without thorough integration testing

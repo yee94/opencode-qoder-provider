@@ -1,0 +1,94 @@
+
+/Users/yee.wang/.qoder/bin/qodercli/qodercli-0.1.38:	file format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+00000001003f2770 <_crosscall2>:
+100416df0: f9400b90    	ldr	x16, [x28, #0x10]
+100416df4: d100c3f1    	sub	x17, sp, #0x30
+100416df8: eb10023f    	cmp	x17, x16
+100416dfc: 54000929    	b.ls	0x100416f20 <_crosscall2+0x247b0>
+100416e00: f8150ffe    	str	x30, [sp, #-0xb0]!
+100416e04: f81f83fd    	stur	x29, [sp, #-0x8]
+100416e08: d10023fd    	sub	x29, sp, #0x8
+100416e0c: f9005fe0    	str	x0, [sp, #0xb8]
+100416e10: f90073e5    	str	x5, [sp, #0xe0]
+100416e14: f90077e6    	str	x6, [sp, #0xe8]
+100416e18: f9006be3    	str	x3, [sp, #0xd0]
+100416e1c: f90063e1    	str	x1, [sp, #0xc0]
+100416e20: f90067e2    	str	x2, [sp, #0xc8]
+100416e24: f9006fe4    	str	x4, [sp, #0xd8]
+100416e28: 97fffbfe    	bl	0x100415e20 <_crosscall2+0x236b0>
+100416e2c: b40006c0    	cbz	x0, 0x100416f04 <_crosscall2+0x24794>
+100416e30: f9003be0    	str	x0, [sp, #0x70]
+100416e34: f9404001    	ldr	x1, [x0, #0x80]
+100416e38: f9404402    	ldr	x2, [x0, #0x88]
+100416e3c: f9405fe0    	ldr	x0, [sp, #0xb8]
+100416e40: aa1f03e3    	mov	x3, xzr
+100416e44: aa1f03e4    	mov	x4, xzr
+100416e48: 940009c6    	bl	0x100419560 <_crosscall2+0x26df0>
+100416e4c: f90043e0    	str	x0, [sp, #0x80]
+100416e50: f90037e1    	str	x1, [sp, #0x68]
+100416e54: f9403be5    	ldr	x5, [sp, #0x70]
+100416e58: f94048a9    	ldr	x9, [x5, #0x90]
+100416e5c: f9404caa    	ldr	x10, [x5, #0x98]
+100416e60: aa0103e2    	mov	x2, x1
+100416e64: f94063e3    	ldr	x3, [sp, #0xc0]
+100416e68: f94067e4    	ldr	x4, [sp, #0xc8]
+100416e6c: f9406be5    	ldr	x5, [sp, #0xd0]
+100416e70: f9406fe6    	ldr	x6, [sp, #0xd8]
+100416e74: f94073e7    	ldr	x7, [sp, #0xe0]
+100416e78: f94077e8    	ldr	x8, [sp, #0xe8]
+100416e7c: aa0003e1    	mov	x1, x0
+100416e80: f9405fe0    	ldr	x0, [sp, #0xb8]
+100416e84: 9400094b    	bl	0x1004193b0 <_crosscall2+0x26c40>
+100416e88: f9003fe0    	str	x0, [sp, #0x78]
+100416e8c: f90033e1    	str	x1, [sp, #0x60]
+100416e90: a908ffff    	stp	xzr, xzr, [sp, #0x88]
+100416e94: a909ffff    	stp	xzr, xzr, [sp, #0x98]
+100416e98: f94043e0    	ldr	x0, [sp, #0x80]
+100416e9c: f94037e1    	ldr	x1, [sp, #0x68]
+100416ea0: 97f1795c    	bl	0x100075410 <__text+0x74160>
+100416ea4: d0007ce5    	adrp	x5, 0x1013b4000 <dyld_stub_binder+0x1013b4000>
+100416ea8: 910600a5    	add	x5, x5, #0x180
+100416eac: f90047e5    	str	x5, [sp, #0x88]
+100416eb0: f9004be0    	str	x0, [sp, #0x90]
+100416eb4: f9403fe0    	ldr	x0, [sp, #0x78]
+100416eb8: f94033e1    	ldr	x1, [sp, #0x60]
+100416ebc: 97f17955    	bl	0x100075410 <__text+0x74160>
+100416ec0: d0007ce5    	adrp	x5, 0x1013b4000 <dyld_stub_binder+0x1013b4000>
+100416ec4: 910600a5    	add	x5, x5, #0x180
+100416ec8: f9004fe5    	str	x5, [sp, #0x98]
+100416ecc: f90053e0    	str	x0, [sp, #0xa0]
+100416ed0: f0004f40    	adrp	x0, 0x100e01000 <dyld_stub_binder+0x100e01000>
+100416ed4: 9134c400    	add	x0, x0, #0xd31
+100416ed8: d2800221    	mov	x1, #0x11               ; =17
+100416edc: 910223e2    	add	x2, sp, #0x88
+100416ee0: b27f03e3    	orr	x3, xzr, #0x2
+100416ee4: aa0303e4    	mov	x4, x3
+100416ee8: 97f3c01e    	bl	0x100106f60 <__cgo_topofstack+0x86fd0>
+100416eec: f9403be5    	ldr	x5, [sp, #0x70]
+100416ef0: f94048a2    	ldr	x2, [x5, #0x90]
+100416ef4: f9404ca3    	ldr	x3, [x5, #0x98]
+100416ef8: f85f83fd    	ldur	x29, [sp, #-0x8]
+100416efc: f84b07fe    	ldr	x30, [sp], #0xb0
+100416f00: d65f03c0    	ret
+100416f04: aa1f03e0    	mov	x0, xzr
+100416f08: aa1f03e1    	mov	x1, xzr
+100416f0c: aa0003e2    	mov	x2, x0
+100416f10: aa0103e3    	mov	x3, x1
+100416f14: f85f83fd    	ldur	x29, [sp, #-0x8]
+100416f18: f84b07fe    	ldr	x30, [sp], #0xb0
+100416f1c: d65f03c0    	ret
+100416f20: a90087e0    	stp	x0, x1, [sp, #0x8]
+100416f24: a9018fe2    	stp	x2, x3, [sp, #0x18]
+100416f28: a90297e4    	stp	x4, x5, [sp, #0x28]
+100416f2c: f9001fe6    	str	x6, [sp, #0x38]
+100416f30: aa1e03e3    	mov	x3, x30
+100416f34: 97f19b47    	bl	0x10007dc50 <__text+0x7c9a0>
+100416f38: a94087e0    	ldp	x0, x1, [sp, #0x8]
+100416f3c: a9418fe2    	ldp	x2, x3, [sp, #0x18]
+100416f40: a94297e4    	ldp	x4, x5, [sp, #0x28]
+100416f44: f9401fe6    	ldr	x6, [sp, #0x38]
+100416f48: 17ffffaa    	b	0x100416df0 <_crosscall2+0x24680>
+100416f4c: 00000000    	udf	#0x0
